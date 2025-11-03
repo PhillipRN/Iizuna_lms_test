@@ -1,0 +1,40 @@
+set charset utf8mb4;
+
+BEGIN;
+
+ALTER TABLE json_quiz ADD COLUMN parent_folder_id BIGINT UNSIGNED NOT NULL DEFAULT 0 AFTER id;
+ALTER TABLE onigiri_json_quiz ADD COLUMN parent_folder_id BIGINT UNSIGNED NOT NULL DEFAULT 0 AFTER id;
+
+CREATE TABLE json_quiz_folder (
+    id BIGINT UNSIGNED AUTO_INCREMENT,
+    parent_folder_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    teacher_id BIGINT UNSIGNED NOT NULL,
+    name TEXT NOT NULL,
+    create_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_date DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB;
+
+CREATE INDEX index_json_quiz_folder_parent_folder_id ON json_quiz_folder(parent_folder_id);
+CREATE INDEX index_json_quiz_folder_teacher_id ON json_quiz_folder(teacher_id);
+
+CREATE VIEW json_quiz_folder_view AS SELECT jqf.*, t.school_id FROM json_quiz_folder AS jqf INNER JOIN teacher AS t ON jqf.teacher_id = t.id;
+
+
+CREATE TABLE onigiri_json_quiz_folder (
+    id BIGINT UNSIGNED AUTO_INCREMENT,
+    parent_folder_id BIGINT UNSIGNED  NOT NULL DEFAULT 0,
+    teacher_id BIGINT UNSIGNED NOT NULL,
+    name TEXT NOT NULL,
+    create_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_date DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB;
+
+CREATE INDEX index_onigiri_json_quiz_folder_parent_folder_id ON onigiri_json_quiz_folder(parent_folder_id);
+CREATE INDEX index_onigiri_json_quiz_folder_teacher_id ON onigiri_json_quiz_folder(teacher_id);
+
+CREATE VIEW onigiri_json_quiz_folder_view AS SELECT jqf.*, t.school_id FROM onigiri_json_quiz_folder AS jqf INNER JOIN teacher AS t ON jqf.teacher_id = t.id;
+
+
+COMMIT;

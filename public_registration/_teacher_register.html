@@ -1,0 +1,239 @@
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="robots" content="noindex">
+    <title>LMSユーザー申請画面</title>
+    <link rel="stylesheet" href="common/style.css?202303052122" type="text/css">
+    <script src="common/scripts/registration_user.js?202303052122"></script>
+    <script src="common/scripts/jquery-3.6.0.min.js"></script>
+    <script type="text/javascript">
+    // const consent_chk = document.querySelector(`#consent-chk`);
+    // const submit_btn = document.querySelector(`input[type=submit]`);
+    //
+    // consent_chk.addEventListener('change', () => {
+    //
+    //   if (consent_chk.checked === true) {
+    //     submit_btn.disabled = false;
+    //   } else {
+    //     submit_btn.disabled = true;
+    //   }
+    //
+    // });
+
+    $(function() {
+        $('#search_school_button').click(searchAndSetSchoolList);
+        $('#school_id').change(onChangeSchool);
+    });
+
+    function searchAndSetSchoolList()
+    {
+        let school_zip = $('#school_zip').val();
+
+        if (checkZip(school_zip)) {
+            $('#errors').html('');
+            $('#school_pref').html('');
+            $('#school_address').html('');
+            $('#school_pref_hidden').val('');
+            $('#school_address_hidden').val('');
+
+            let params = {
+                'school_zip': school_zip,
+                'sck': $('#sck').val()
+            }
+
+            $.ajax({
+                url: 'search_school.php',
+                type: 'post',
+                data: params,
+                timeout: 30000,
+            })
+            .done(function(result) {
+                if (result.error != null)
+                {
+                    $('#errors').html(result.error['message'] + ' (' + result.error['code'] + ')');
+                    return;
+                }
+                else
+                {
+                    if (result.schools.length > 0) {
+                        $('#school_id').empty();
+
+                        for (var i=0; result.schools.length; ++i) {
+                            const school = result.schools[i];
+                            $('#school_id').append('<option value="' + school['id'] + '" data-pref="' + school['pref'] + '" data-address="' + school['address'] + '">' + school['name'] + '</option>');
+
+                            if (i==0) {
+                                $('#school_pref').html(school['pref']);
+                                $('#school_address').html(school['address']);
+                                $('#school_pref_hidden').val(school['pref']);
+                                $('#school_address_hidden').val(school['address']);
+                            }
+                        }
+                        // for (const school of result.schools) {
+                        //     $('#school_id').append('<option value="' + school['id'] + '" data-pref="ppp" data-address="aaa">' + school['name'] + '</option>');
+                        // }
+                    }
+                    else {
+                        $('#school_id').empty();
+                        $('#school_id').append('<option>-</option>')
+                        $('#errors').html('郵便番号から対象の学校は見つかりませんでした。');
+                    }
+                    // alert('登録しました。');
+                    // window.location = './group.php';
+                    // return;
+
+                    onChangeSchool();
+                }
+            })
+            .fail(function(result) {
+                alert('エラーが発生しました。');
+                return;
+            });
+        }
+        else {
+            $('#school_id').empty();
+            $('#school_id').append('<option>-</option>')
+            $('#errors').html('学校郵便番号を正しく入力してください');
+        }
+    }
+
+    function onChangeSchool()
+    {
+        let option = $(this).children('option:selected');
+
+        if (option.val() != "") {
+            $('#school_pref').html(option.data('pref'));
+            $('#school_address').html(option.data('address'));
+            $('#school_pref_hidden').val(option.data('pref'));
+            $('#school_address_hidden').val(option.data('address'));
+        }
+    }
+    </script>
+</head>
+<body>
+
+<div id="contents">
+
+    <div class="user_register_form">
+        <h1 style="margin: 0px 0px 35px 20px; background-image:none;"><img src="common/img/logo_e.png" alt="" width="95px;" style="margin:10px 15px -8px -50px;">LMSご利用申請</h1>
+        <div style="margin: 20px 30px;font-size: 12pt;">
+            <p style="margin-bottom: -10px;">※ご利用申請は、以下の「申請フォーム」からお願いいたします。必要事項について、ご入力いただき、ページ下部の「確認画面へ」ボタンをクリックしてください。</p>
+            <p style="margin-bottom: -10px;">※本サービスは対象書籍をご採用いただいた高等学校・中学校・中等教育学校様向けのものとなります。受注の確認が取れてから、配信サイトにログインするためのアカウントを発行させていただいております。ご申請からご利用まで数日いただくことになりますことご承知おきください。</p>
+            <p>※発行したアカウントのご送信時に、ご利用までの手順書を同封いたしております。手順書をご確認の上、ご利用ください。</p>
+            <div style="border-left:6px solid #e88000;padding-left: 15px;">
+                <h3>申請フォーム</h3>
+            </div>
+        </div>
+
+        <div id="errors" class="error">
+        {foreach $errors as $error name='loop'}
+        {$error}<br />
+        {/foreach}
+        </div>
+        <form method="post" action="teacher_register.php">
+            <input type="hidden" name="sck" value="{$session_check_key}" id="sck" />
+            <table class="admin_list">
+                <tr>
+                    <th>学校郵便番号<span style="font-size: small;">(必須)</span>
+                        <div class="caption" style="font-size: small;">例：000-0000(半角)</div></th>
+                    <td>
+                        <input type="text" name="school_zip" value="{if isset($teacher.school_zip)}{$teacher.school_zip}{/if}" maxlength="8" onblur="zen2han(this)" style="width: 160px;" id="school_zip" />
+                        <button type="button" id="search_school_button">郵便番号から学校検索</button>
+                    </td>
+                </tr>
+                <th>学校<span style="font-size: small;">(必須)</span></th>
+                <td>
+                    <input type="hidden" name="school_id_hidden" value="" id="school_id_hidden" />
+                    <select name="school_id" id="school_id">
+                        {if empty($schoolList)}<option>-</option>{/if}
+                        {foreach $schoolList as $school name='loop'}
+                        <option value="{$school.id}" data-pref="{$school.pref}" data-address="{$school.address}" {if isset($teacher.school_id) && $teacher.school_id == $school.id}selected{/if}>{$school.name}</option>
+                        {/foreach}
+                    </select>
+                </td>
+                <tr>
+                    <th>都道府県</th>
+                    <td>
+                        <span id="school_pref">{if isset($teacher.school_pref)}{$teacher.school_pref}{/if}</span>
+                        <input type="hidden" name="school_pref" value="{if isset($teacher.school_pref)}{$teacher.school_pref}{/if}" id="school_pref_hidden" />
+                    </td>
+                </tr>
+                <tr>
+                    <th>学校住所</th>
+                    <td>
+                        <span id="school_address">{if isset($teacher.school_address)}{$teacher.school_address}{/if}</span>
+                        <input type="hidden" name="school_address" value="{if isset($teacher.school_address)}{$teacher.school_address}{/if}" id="school_address_hidden" />
+                    </td>
+                </tr>
+                <tr>
+                    <th>電話番号<span style="font-size: small;">(必須)</span>
+                        <div class="caption" style="font-size:small">例：0000000000<br/ >(半角・ハイフンなし)</div></th>
+                    <td><input type="text" name="phone" value="{if isset($teacher.phone)}{$teacher.phone}{/if}" onblur="zen2han(this)" /></td>
+                </tr>
+                <tr>
+                    <th>姓<span style="font-size: small;">(必須)</span></th>
+                    <td><input type="text" name="name_1" value="{if isset($teacher.name_1)}{$teacher.name_1}{/if}" /></td>
+                </tr>
+                <tr>
+                    <th>名<span style="font-size: small;">(必須)</span></th>
+                    <td><input type="text" name="name_2" value="{if isset($teacher.name_2)}{$teacher.name_2}{/if}" /></td>
+                </tr>
+                <tr>
+                    <th>セイ<span style="font-size: small;">(必須)</span></th>
+                    <td><input type="text" name="kana_1" value="{if isset($teacher.kana_1)}{$teacher.kana_1}{/if}" /></td>
+                </tr>
+                <tr>
+                    <th>メイ<span style="font-size: small;">(必須)</span></th>
+                    <td><input type="text" name="kana_2" value="{if isset($teacher.kana_2)}{$teacher.kana_2}{/if}" /></td>
+                </tr>
+                <tr>
+                    <th>メールアドレス<span style="font-size: small;">(必須)</span><br><span style="font-size: 9pt;color: red;line-height: 9pt;">※ご勤務先のメールアドレスをご入力ください</span></th>
+                    <td><input type="email" name="mail" value="{if isset($teacher.mail)}{$teacher.mail}{/if}" onblur="zen2han(this)" /></td>
+                </tr>
+            </table>
+
+            <h2 style="margin: 45px 0 15px 25px;">利用書籍タイトル<br />
+                <span style="font-size: 16px;color: red;">※ご採用頂きました書籍（30冊以上）だけご利用頂けます。<br />
+                    &emsp;選択される際、書籍のEditionや版をお間違えないようにお願いいたします。</span></h2>
+            <table>
+                <tr>
+                    <td>
+                        <div><span class="pointbox"></span>デジタルコンテンツ</div>
+                        <input type="checkbox" name="is_e_onigiri" value="1" id="is_e_onigiri"{if isset($teacher.is_e_onigiri) && $teacher.is_e_onigiri} checked{/if}><label for="is_e_onigiri"> e-ONIGIRI英単語</label><br />
+{foreach $ebooks as $ebook name='loop'}
+{assign var=checked value=''}
+{if isset($teacher.teacher_ebook) && in_array($ebook.title_no, $teacher.teacher_ebook)}{assign var=checked value='checked'}{/if}
+                        <input type="checkbox" name="teacher_ebook[]" value="{$ebook.title_no}" id="teacher_ebook_{$ebook.title_no}" {$checked}><label for="teacher_ebook_{$ebook.title_no}"> e-ONIGIRI参考書 {$ebook.name}</label><br />
+{/foreach}
+	                    <div><span class="pointbox"></span>英語</div>
+                        {foreach $bookList[0] as $data name='loop'}
+                        {if $data.title_no|in_array:$teacherBookList == false}
+                        <input type="checkbox" name="title_no[]" value="{$data.title_no}" id="book_0_{$data.title_no}"{if $data.title_no|in_array:$teacherBookTempList} checked{/if}><label for="book_0_{$data.title_no}"> {$data.name}</label><br />
+                        {/if}
+                        {/foreach}
+                        <div><span class="pointbox"></span>国語</div>
+                        {foreach $bookList[1] as $data name='loop'}
+                        {if $data.title_no|in_array:$teacherBookList == false}
+                        <input type="checkbox" name="title_no[]" value="{$data.title_no}" id="book_1_{$data.title_no}"{if $data.title_no|in_array:$teacherBookTempList} checked{/if}><label for="book_1_{$data.title_no}"> {$data.name}</label><br />
+                        {/if}
+                        {/foreach}
+                    </td>
+                </tr>
+            </table>
+            <br />
+            <span style="color: red;padding: 20px;">※入力した内容に間違いがないか、再度ご確認ください。</span><br>
+            <input type="checkbox" class="checkboxc" name="privacy" value="1" id="privacy-checkbox" {if isset($teacher.privacy)}checked{/if}>
+            <label for="privacy-checkbox">個人情報の取り扱いに同意する</label><br>
+            <span style="padding-left: 20px;">※個人情報保護方針について</span><a href="https://www.iizuna-shoten.com/privacy/" style="text-decoration: underline; color: red;" target="_blank">こちら</a>をご覧ください<br>
+            <input type="checkbox" class="checkboxc" name="terms" value="1" id="terms-checkbox" {if isset($teacher.terms)}checked{/if}>
+            <label for="terms-checkbox">利用規約に同意する</label><br>
+            <span style="padding-left: 20px;">※利用規約について</span><a href="https://www.iizuna-shoten.com/terms-of-use-googleforms/" style="text-decoration: underline; color: red;" target="_blank">こちら</a>をご覧ください
+
+            <div class="buttonArea">
+                <input type="submit" class="bb" style="margin-top:20px;" name="submit" value="確認画面へ" />
+            </div>
+        </form>
+    </div>
+</div>
+</body>
+</html>

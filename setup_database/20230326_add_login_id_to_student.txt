@@ -1,0 +1,13 @@
+set charset utf8mb4;
+
+BEGIN;
+
+ALTER TABLE student ADD COLUMN login_id VARCHAR(64) UNIQUE AFTER ebook_user_id;
+ALTER TABLE student ADD COLUMN password TEXT AFTER login_id;
+
+ALTER TABLE student ADD COLUMN contact_user_id VARCHAR(20) AFTER id;
+UPDATE student SET contact_user_id = SUBSTRING(MD5(RAND()),1,20);
+
+ALTER TABLE student MODIFY COLUMN contact_user_id VARCHAR(20) NOT NULL UNIQUE;
+
+COMMIT;

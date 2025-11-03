@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+<head>
+    {include file='_gtag.html'}
+
+    {include file='_favicon.html'}
+
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- link -->
+    <link rel="stylesheet" href="common/style/common.css?20230402">
+    <style>
+        #errorMessage {
+            margin: 20px 20px 50px;
+        }
+
+        #footer {
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+<div id="errorMessage">
+    {$error}
+</div>
+
+<div id="footer">
+    <button type="button" onclick="location.href='./'">ホームに戻る</button>
+</div>
+</body>
+</html>

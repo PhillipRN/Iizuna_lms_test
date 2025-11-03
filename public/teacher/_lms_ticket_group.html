@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    {include file='_gtag.html'}
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex">
+    <title>LMSチケット</title>
+
+    {include file='_favicon.html'}
+
+    <link rel="stylesheet" href="../common/styles/reset.css" type="text/css">
+    <link rel="stylesheet" href="./common/styles/layout.css?20240120" type="text/css">
+    <link rel="stylesheet" href="./common/styles/lms_ticket.css" type="text/css">
+    <script src="../common/scripts/jquery-3.6.0.min.js"></script>
+    <script src="../common/scripts/jqueryui/jquery-ui.min.js"></script>
+    <script src="../common/scripts/common.js"></script>
+    <script src="../common/scripts/validation.js"></script>
+
+    <script type="text/javascript">
+        $(function() {
+            $("#groupRegistrationForm").submit(groupRegister);
+            $('.operation').click(moveUpdatePage);
+            $('.qrCode').click(checkAndSubmitQR);
+            $('#qrForm').submit(submitFormForQR);
+        });
+
+        function groupRegister() {
+            $('#errors').html('');
+
+            let quantity = $("#quantity").val();
+
+            if (!isPositiveInteger(quantity)) {
+                $('#errors').html('発行数を正しく入力してください。');
+                return false;
+            }
+
+            let form = $("#groupRegistrationForm");
+
+            $.ajax({
+                url: 'lms_ticket_group_register.php',
+                type: 'post',
+                data: form.serialize(),
+                timeout: 30000,
+
+            })
+            .done(function(result) {
+                if (result.result =='OK')
+                {
+                    alert('登録しました。');
+                    location.reload();
+                    return;
+                } else if (result.error != null)
+                {
+                    $('#errors').html(result.error['message']);
+                    return;
+                }
+                else
+                {
+                    alert('エラーが発生しました。');
+                    return;
+                }
+            })
+            .fail(function(result) {
+                alert('エラーが発生しました。');
+                return;
+            });
+
+            return false;
+        }
+
+        function moveUpdatePage() {
+            let id = $(this).data('id');
+
+            location.href = './lms_ticket_group_update.php?ltgid=' + id;
+            return false;
+        }
+
+        function checkAndSubmitQR() {
+            let id = $(this).data('id');
+            let obj = $('#' + id);
+
+            obj.prop('checked', true);
+
+            submitFormForQR();
+            return false;
+        }
+
+        function submitFormForQR() {
+            let form = $('#qrForm');
+            let query = form.serialize();
+
+            if (query != "") {
+                let options = 'width=1024px,height=800px,menubar=no';
+                window.open('', 'QRCodeWindow', options);
+                form.attr('action', 'qr.php');
+                form.attr('target', 'QRCodeWindow');
+                form.submit();
+            }
+
+            return false;
+        }
+    </script>
+</head>
+<body>
+<div id="container">
+    <div id="menuArea">
+        <div id="logoArea">
+            <img src="common/images/logo.png" alt="Test Creator LMS" />
+        </div>
+{include file='_side_menu.html' isJuku=$isJuku current='lms_ticket'}
+    </div>
+
+    <div id="contentArea">
+        <h2>チケッティング</h2>
+        <table class="separateTable">
+            <tr>
+                <td>種別</td>
+                <td>{$record.name}</td>
+            </tr>
+            <tr>
+                <td>期限</td>
+                <td>{$record.expire_year}年{$record.expire_month}月まで</td>
+            </tr>
+            <tr>
+                <td>チケット数</td>
+                <td>{$record.quantity}</td>
+            </tr>
+        </table>
+
+        <h2 style="margin-top: 50px">チケットグループ追加</h2>
+        <div id="errors" class="caution"></div>
+        <form method="post" id="groupRegistrationForm">
+            <input type="hidden" name="_csrf" value="{$csrf}" />
+            <input type="hidden" name="lms_ticket_id" value="{$record.id}" />
+            チケットグループ名<br />
+            <input type="text" name="name" class="borderBox" id="group_name">
+            <div class="classFormIsPaid">
+                発行数<br />
+                <input type="text" name="quantity" value="" id="quantity" onchange="zen2han(this)" />
+            </div>
+            <div class="buttonArea">
+                <input type="submit" value="追加" class="normalButton">
+            </div>
+        </form>
+
+        <div id="codeList">
+            <h2>チケットグループ一覧</h2>
+            {if empty($groups)}
+            <p>チケットグループは作成されていません。</p>
+            {else}
+            <form action="./qr.php" method="post" id="qrForm">
+                <table class="separateTable">
+                    <tr>
+                        <th class="checkboxCell"></th>
+                        <th>チケットグループ名</th>
+                        <th>消費 / 発行</th>
+                        <th style="width: 300px">コード</th>
+                        <th style="width: 80px">操作</th>
+                    </tr>
+                    {foreach $groups as $group name='loop'}
+                    <tr>
+                        <td class="checkboxCell"><input type="checkbox" name="ticket_group_ids[]" value="{$group.id}" id="group_id_{$group.id}" /></td>
+                        <td>{$group.name}</td>
+                        <td>{$group.use_count} / {$group.quantity}</td>
+                        <td>
+                            {$group.lms_code}
+                            <div class="rightButtonArea">
+                                <button class="normalButton middle qrCode" data-id="group_id_{$group.id}">QRコード生成</button>
+                            </div>
+                        </td>
+                        <td><div class="centerButtonArea"><button class="normalButton x-small isEnable operation" data-id="{$group.id}" onclick="">操作</button></div></td>
+                        </td>
+                    </tr>
+                    {/foreach}
+                </table>
+                <div id="deliverySelected">
+                    <input type="submit" value="まとめてQRコード生成" class="normalButton" />
+                </div>
+            </form>
+        </div>
+        {/if}
+    </div>
+</div>
+</body>
+</html>

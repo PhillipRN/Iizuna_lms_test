@@ -1,0 +1,8 @@
+set charset utf8mb4;
+
+BEGIN;
+
+ALTER TABLE onigiri_json_quiz MODIFY range_stage TEXT;
+ALTER TABLE onigiri_json_quiz ADD COLUMN ranges TEXT AFTER range_stage;
+
+COMMIT;

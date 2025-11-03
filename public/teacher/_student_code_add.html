@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    {include file='_gtag.html'}
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex">
+    <title>Student Add</title>
+
+    {include file='_favicon.html'}
+
+    <link rel="stylesheet" href="../common/styles/reset.css" type="text/css">
+    <link rel="stylesheet" href="./common/styles/layout.css?20240120" type="text/css">
+    <link rel="stylesheet" href="./common/styles/scroll_box.css" type="text/css">
+    <script src="../common/scripts/jquery-3.6.0.min.js"></script>
+    <script type="text/javascript">
+        $(function() {
+            $('#studentRegistrationForm').submit(registrationSubmit);
+            $('#studentRegistrationFormForCsv').submit(registrationCsvSubmit);
+        });
+
+        function registrationSubmit() {
+            let form = $('#studentRegistrationForm');
+
+            var errors = [];
+
+            if ($('#student_name').val() == '') {
+                errors.push('生徒の名前を入力してください。');
+            }
+
+            if (errors.length != 0) {
+                $('#errors').html(errors.join('<br>'));
+            }
+            else {
+                $('#errors').html('');
+
+                $.ajax({
+                    url: 'student_code_register.php',
+                    type: 'post',
+                    data: form.serialize(),
+                    timeout: 30000,
+                })
+                    .done(function(result) {
+                        if (result.error != null)
+                        {
+                            $('#errors').html(result.error['message'] + ' (' + result.error['code'] + ')');
+                            return;
+                        }
+                        else
+                        {
+                            alert('登録しました。');
+                            window.location = './student_code.php';
+                            return;
+                        }
+                    })
+                    .fail(function(result) {
+                        alert('エラーが発生しました。');
+                        return;
+                    });
+            }
+
+            return false;
+        }
+
+        function registrationCsvSubmit() {
+            var errors = [];
+
+            if ($('#csv_file').val() == '') {
+                errors.push('ファイルを選択してください。');
+            }
+
+            if (errors.length != 0) {
+                $('#errorsCsv').html(errors.join('<br>'));
+            }
+            else {
+                $('#errorsCsv').html('');
+
+                var formData = new FormData($('#studentRegistrationFormForCsv').get(0));
+
+                $.ajax({
+                    url: 'student_code_register_csv.php',
+                    type: 'post',
+                    data: formData,
+                    timeout: 30000,
+                    contentType: false,
+                    processData: false
+                })
+                .done(function(result) {
+                    if (result.error != null)
+                    {
+                        $('#errorsCsv').html(result.error['message'] + ' (' + result.error['code'] + ')');
+                        return;
+                    }
+                    else if(result.result == 'OK')
+                    {
+                        alert('登録しました。');
+                        window.location = './student_code.php';
+                        return;
+                    }
+                    else {
+                        alert('予期せぬエラーが発生しました。');
+                        return;
+                    }
+                })
+                .fail(function(result) {
+                    alert('予期せぬエラーが発生しました。');
+                    return;
+                });
+            }
+
+            return false;
+        }
+    </script>
+</head>
+<body>
+<div id="container">
+    <div id="menuArea">
+        <div id="logoArea">
+            <img src="common/images/logo.png" alt="Test Creator LMS" />
+        </div>
+{include file='_side_menu.html' isJuku=$isJuku current='student_code'}
+    </div>
+
+    <div id="contentArea">
+        <div id="addStudent">
+            <h2>新規生徒登録</h2>
+            <div id="errors" class="caution">
+                {foreach $errors as $error name='loop'}
+                {$error}<br />
+                {/foreach}
+            </div>
+            <form method="post" id="studentRegistrationForm">
+                <input type="text" name="name" class="borderBox" id="student_name" />
+
+                <div class="buttonArea">
+                    <input type="submit" value="登録" class="normalButton middle" />
+                </div>
+            </form>
+
+            <br />
+            <br />
+            <br />
+
+            <h2>一括登録</h2>
+            <div id="errorsCsv" class="caution"></div>
+            <form method="post" id="studentRegistrationFormForCsv" enctype="multipart/form-data">
+                <input type="file" name="csvfile" id="csv_file" />
+
+                <div class="buttonArea">
+                    <input type="submit" value="一括登録" class="normalButton middle" />
+                </div>
+            </form>
+            <p>
+                一括登録用のファイルは、一行に一人ずつ名前を記入したファイルにしてください。<br />
+                ファイル名は〇〇.csvというファイル名にしてください。
+            </p>
+        </div>
+    </div>
+</div>
+</body>
+</html>

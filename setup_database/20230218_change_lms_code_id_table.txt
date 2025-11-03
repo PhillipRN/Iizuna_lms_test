@@ -1,0 +1,10 @@
+set charset utf8mb4;
+
+BEGIN;
+
+# lms_code_id を BIGINT に対応
+ALTER TABLE lms_code MODIFY id BIGINT UNSIGNED AUTO_INCREMENT;
+
+ALTER TABLE onigiri_learning_range MODIFY lms_code_id BIGINT UNSIGNED NOT NULL;
+
+COMMIT;

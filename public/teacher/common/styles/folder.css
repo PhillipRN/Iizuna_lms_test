@@ -1,0 +1,76 @@
+.currentFolder {
+    background-image: url("../images/icon_folder.png");
+    background-size: 32px 32px;
+    background-repeat: no-repeat;
+    background-position-x: 5px;
+    height: 32px;
+    padding-left: 45px;
+    margin: 10px 0;
+    line-height: 32px;
+}
+
+#folderList {
+    margin-top: 50px;
+}
+
+#folderForm {
+    margin: 10px 0;
+}
+
+#folderForm .buttonArea {
+    margin: 15px 0 0;
+}
+
+ul.folderTree {
+    margin: 15px 0;
+    padding: 0;
+}
+
+.folderTree ul {
+    padding: 0;
+}
+
+.folderTree li {
+    list-style: none;
+    background-image: url("../images/icon_folder.png");
+    background-size: 32px 32px;
+    background-repeat: no-repeat;
+    background-position-x: 5px;
+    background-position-y: 0;
+    padding-left: 45px;
+    margin: 10px 0;
+    line-height: 32px;
+}
+
+#choiceFolderContent {
+    position: relative;
+}
+
+
+#folderManagementButton {
+    position: absolute;
+    top: 0;
+    right: 0;
+}
+
+.childrenFolder {
+    background-image: url("../images/icon_folder.png");
+    background-size: 24px 24px;
+    background-repeat: no-repeat;
+    background-position-x: 5px;
+    background-position-y: 0;
+    padding-left: 35px;
+    margin: 10px 0;
+    line-height: 24px;
+}
+
+.parentFolder {
+    background-image: url("../images/icon_back_arrow.png");
+    background-size: 24px 24px;
+    background-repeat: no-repeat;
+    background-position-x: 5px;
+    background-position-y: 0;
+    padding-left: 35px;
+    margin: 10px 0;
+    line-height: 24px;
+}

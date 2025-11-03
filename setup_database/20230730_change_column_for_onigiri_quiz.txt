@@ -1,0 +1,7 @@
+set charset utf8mb4;
+
+BEGIN;
+
+ALTER TABLE onigiri_json_quiz MODIFY range_stage TEXT NOT NULL;
+
+COMMIT;

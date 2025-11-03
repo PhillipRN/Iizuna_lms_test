@@ -1,0 +1,305 @@
+#sectionCondition,
+#numberCondition,
+#midasiNumberCondition,
+#midasiCondition {
+    display: none;
+}
+
+#midasiCondition,
+#chapterCondition {
+	max-height: 400px;
+	padding: 5px 0;
+	overflow: auto;
+	border: 1px solid #ccc;
+}
+
+#loading {
+    display: none;
+    width: 24px
+}
+
+.error {
+    color: #c00;
+}
+
+.hidden {
+    display: none;
+}
+
+.center {
+    text-align: center;
+}
+
+#copyResult {
+	font-weight: bold;
+	font-size: 18px;
+}
+
+#copyRemainTime {
+	font-weight: bold;
+	font-size: 18px;
+}
+
+#createResult {
+	font-weight: bold;
+	font-size: 18px;
+}
+
+#remainTime {
+	font-weight: bold;
+	font-size: 18px;
+}
+
+body {
+	width: 100%;
+	margin: 0 auto;
+	border-top:solid #d28133 8pt;
+	font-family: sans-serif;
+}
+
+#contents {
+	width: 95%;
+	max-width: 800px;
+	margin: 0 auto;
+	padding: 10px;
+}
+#header {
+	width: 100%;
+}
+
+h1{
+	height: 40px;
+	background-image: url(img/gfmark2.png);
+	background-size:35px 40px;
+	background-repeat: no-repeat;
+	padding: 0px 0px 0px 50px;
+	font-size: 18pt;
+	vertical-align: middle;
+	padding-top: 3px;
+}
+
+#authorize {
+	border: solid 1px black;
+	border-radius: 5px;
+	padding: 20px 15px;
+	margin: 20px 0;	
+}
+
+h2 {
+	border-left: solid #d28133 6px;
+	padding-left: 10px;
+	font-size: 20px;
+}
+
+
+select.selectBookAndRange {
+	width: 250px; 
+	height: 40px;
+	margin: 30px 3px;
+	padding-left: 10px;
+	border: solid black 1px;
+	background: transparent;
+}
+
+#copyFolderButton {
+	width: 150px;
+	height: 40px;
+	border:solid #986100 1px;
+	border-radius: 5px;
+	background-color: #d28133;
+	color: white;
+	font-size: 17px;
+}
+
+#footer {
+	text-align: center;
+	color: white;
+	background-color: #d28133;
+	margin-top: 20px;
+	padding: 1px;
+	font-size: 13px;
+}
+
+.waku {
+	width: 300px;
+	padding: 10px;
+	border: solid 0.5px black;
+}
+
+.loginwaku {
+	width: 300px;
+	padding: 10px;
+	border: none;
+	background-color: #d28133;
+	color: white;
+}
+
+.img {
+	text-align: center;
+}
+
+.buttonArea {
+	text-align: center;
+}
+
+.bb {
+	margin: 0 auto;
+	width: 110px;
+	height: 40px;
+	border: none;
+	border-radius: 5px;
+	background-color: #d28133;
+	color: white;
+	font-size: 14px;
+}
+
+#createTestEachClasses ul li {
+	margin-bottom: 10px;
+}
+
+.safari_des{
+	display: none;
+}
+
+
+#createButton {
+	width: 200px;
+	height: 40px;
+	border:solid #986100 1px;
+	border-radius: 5px;
+	background-color: #d28133;
+	color: white;
+	font-size: 17px;
+}
+
+.select_waku {
+	border: solid 1px black;
+}
+
+
+.radio_input {
+	display: none;
+}
+
+.radio_label {
+	display: inline-block;
+	background-color:#fff7eb;
+	padding: 10px;
+	width: 200px;
+	border: 1px solid #d28133;
+	border-left: 3px solid #d28133;
+	border-radius: 5px;
+	color: #d28133;
+	text-align: center;
+	font-weight: bold;
+	transition: .5s;
+}
+
+
+.radio_input:checked + .radio_label {
+	background-color: #d28133;
+	border: solid 1px #986100;
+	border-left:solid 3px #986100; 
+	color: white;
+}
+
+.conditionSubRangeRow {
+	display: none;
+}
+
+#readymade {
+	display: none;
+}
+
+#omakase {
+	display: none;
+}
+
+
+input[type="radio"]:checked#readymadeon~div#readymade {display:block;}
+input[type="radio"]:checked#omakaseon~div#omakase {display:block;}
+
+.user_register_form  {
+	margin: 0 auto;
+	border-radius: 15px;
+	background-color:#F4F0EC;
+	min-width: 550px;
+	padding-bottom: 5px;
+}
+
+.user_register_form #errors {
+	margin: 0 30px;
+}
+
+.user_register_form table {
+	width: 95%;
+	border-spacing: 0;
+	border-right: solid 3px #d28133;
+	border-bottom: solid 3px #d28133;
+	border-radius: 15px;
+	background-color: white;
+	margin: 0 auto;
+	padding: 5px;
+}
+
+.user_register_form th,
+.user_register_form td {
+	border-spacing: 0;
+	/border: solid 1px;
+	/border-top: solid 1px #666;
+	/border-left: solid 1px #666;
+	padding: 10px;
+	min-width: 300px;
+}
+
+.user_register_form th {
+	min-width: 220px;
+	width: 18%;
+	text-align: left;
+	padding-left: 16px;
+}
+
+.user_register_form input[type="text"],
+.user_register_form input[type="password"],
+.user_register_form input[type="email"],
+.user_register_form select{
+	width: 95%;
+	height: 45px;
+	border: solid 1px #a7a7a7;
+	background-color: white;
+	color: #000;
+	font-size: x-large;
+	border-radius: 5px;
+}
+
+.user_register_form .caption {
+	font-size: 0.9em;
+	color: #666666;
+	font-weight: normal;
+	margin-top: -6px;
+}
+
+.pointbox {
+	display: inline-block;
+	width: 10px;
+	height: 10px;
+	background-color: black;
+	margin-right: 10px;
+}
+.checkboxc {
+	margin-left: 20px;
+}
+@media screen and (min-width:400px) and (max-width:700px) {
+	body {
+		max-width: 680px;
+	}
+}
+
+
+/* safari */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+    _::-webkit-full-page-media, _:future, :root .safari_des {
+        color: red;
+        display: block;
+  }
+}

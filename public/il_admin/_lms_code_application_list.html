@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <meta name="robots" content="noindex">
+    <title>管理画面</title>
+
+    {include file='_favicon.html'}
+
+    <link rel="stylesheet" href="../common/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="./common/style.css?202201292100" type="text/css">
+    <link rel="stylesheet" href="./common/admin.css?202303261524" type="text/css">
+    <script src="common/scripts/admin.js"></script>
+    <script type="text/javascript">
+        function moveUpdatePage(id, page) {
+            location.href = 'lms_code_application_update.php?id=' + id + '&backPage=' + page;
+        }
+    </script>
+</head>
+<body>
+<p style="margin: 10px;"><a href="index.php">戻る</a></p>
+<hr />
+<div id="contents">
+    <div class="container-fluid">
+        <div class="row">
+            <div><h1>e-ONIGIRI英単語人数制限有料コード申請一覧</h1></div>
+        </div>
+    </div>
+
+    {if empty($records)}
+    データがありません。
+    {else}
+    <table class="table table-striped table-hover table-bordered">
+        <thead>
+        <tr>
+            <th scope="col">申請日時</th>
+            <th scope="col">学校/氏名</th>
+            <th scope="col">グループコード</th>
+            <th scope="col">申請人数</th>
+            <th scope="col">許可人数</th>
+            <th scope="col">ステータス</th>
+            <th scope="col">操作</th>
+        </tr>
+        </thead>
+        <tbody>
+        {foreach $records as $record name='loop'}
+        <tr>
+            <th scope="row">{$record.create_date|date_format:"%Y-%m-%d %T"}</th>
+            <td>
+                {$record.school_name}<br />
+                {if empty($record.teacher_name_1) && empty($record.teacher_name_2)}-{else}{$record.teacher_name_1} {$record.teacher_name_2}{/if}
+            </td>
+            <td>{$record.group_name}</td>
+            <td>{$record.application_amount}</td>
+            <td>{$record.available_amount}</td>
+            <td>
+                {if $record.paid_application_status == 1}
+                申請中
+                {else if $record.paid_application_status == 2}
+                追加申請中
+                {else}
+                許可済
+                {/if}
+            </td>
+            <td><button type="button" class="btn btn-outline-primary btn-sm" onclick="moveUpdatePage('{$record.id}', '{$currentPage}')">操作</button></td>
+        </tr>
+        {/foreach}
+        </tbody>
+    </table>
+    {/if}
+    <nav aria-label="...">
+        <ul class="pagination pagination-sm">
+{if $currentPage < 6}
+{assign var=startPage value=1}
+{assign var=endPage value=10}
+{else}
+{assign var=startPage value=$currentPage-5}
+{assign var=endPage value=$currentPage+4}
+{/if}
+{if $endPage > $maxPageNum}
+{assign var=endPage value=$maxPageNum}
+{/if}
+
+            {for $page=$startPage to $endPage}
+            {if $page==$currentPage}
+            <li class="page-item disabled">
+                <a class="page-link">{$page}</a>
+            </li>
+            {else}
+            <li class="page-item"><a class="page-link" href="lms_code_application_list.php?page={$page}">{$page}</a></li>
+            {/if}
+            {/for}
+        </ul>
+    </nav>
+</div>
+</body>
+</html>

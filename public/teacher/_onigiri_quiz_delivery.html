@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    {include file='_gtag.html'}
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex">
+    <title>配信</title>
+
+    {include file='_favicon.html'}
+
+    <link rel="stylesheet" href="../common/styles/reset.css" type="text/css">
+    <link rel="stylesheet" href="./common/styles/layout.css?20240120" type="text/css">
+    <link rel="stylesheet" href="./common/styles/loading.css" type="text/css">
+    <script src="../common/scripts/jquery-3.6.0.min.js"></script>
+    <script type="text/javascript">
+        $(function() {
+            $('#deliveryRegistrationForm').submit(registrationSubmit);
+            $('.quizDelivery').click(checkAndSubmit);
+        });
+
+        function checkAndSubmit() {
+            let id = $(this).data('id');
+            let obj = $('#' + id);
+
+            obj.prop('checked', true);
+
+            registrationSubmit();
+            return false;
+        }
+
+        function registrationSubmit() {
+            let form = $('#deliveryRegistrationForm');
+            let params = form.serializeArray()
+
+            var isCheck = false;
+
+            for (var i=0; i<params.length; ++i) {
+                if (params[i].name == 'delivery[]' && params[i].value != '') {
+                    isCheck = true;
+                    break;
+                }
+            }
+
+            var errors = [];
+
+            if (!isCheck) {
+                errors.push('配信先を選択してください。');
+            }
+
+            if (errors.length != 0) {
+                $('#errors').html(errors.join('<br>'));
+                $(window).scrollTop($('#errors').position().top);
+            }
+            else {
+                $('#errors').html('');
+                $('.loading').show();
+
+                $.ajax({
+                    url: 'onigiri_quiz_delivery_register.php',
+                    type: 'post',
+                    data: form.serialize(),
+                    timeout: 300000,
+                })
+                    .done(function(result) {
+                        if (result.error != null)
+                        {
+                            $('#errors').html(result.error['message'] + ' (' + result.error['code'] + ')');
+                            return;
+                        }
+                        else if(result.result == 'OK')
+                        {
+                            alert('配信登録しました。');
+                            window.location = './onigiri_quiz.php';
+                            return;
+                        }
+                        else
+                        {
+                            alert('予期せぬエラーが発生しました。');
+                            return;
+                        }
+                    })
+                    .fail(function(result) {
+                        alert('エラーが発生しました。');
+                        return;
+                    })
+                    .always(function() {
+                        $('.loading').hide();
+                    });
+            }
+
+            return false;
+        }
+
+        function deleteNotice(codeName, quizId, lmsCodeId) {
+            if (confirm("「" + codeName + "」へ配信されているお知らせを削除します。\nよろしいですか？")) {
+                $('.loading').show();
+
+                $.ajax({
+                    url: 'onigiri_quiz_delivery_delete_notice.php',
+                    type: 'post',
+                    data: { 'quiz_id': quizId, 'lms_code_id': lmsCodeId, '_csrf': '{$csrf}' },
+                    async : false,
+                    timeout: 30000,
+                })
+                .done(function(result) {
+                    if (result.error != null)
+                    {
+                        alert(result.error.message);
+                    }
+                    else if(result.result == 'OK')
+                    {
+                        alert('削除しました');
+                        location.reload();
+                    }
+                    else
+                    {
+                        alert('予期せぬエラーが発生しました');
+                    }
+                })
+                .fail(function(result) {
+                    alert('予期せぬエラーが発生しました');
+                })
+                .always(function() {
+                    $('.loading').hide();
+                });
+            }
+
+            return false;
+        }
+    </script>
+</head>
+<body>
+<div class="loading">
+    <div class="animation"></div>
+</div>
+<div id="container">
+    <div id="menuArea">
+        <div id="logoArea">
+            <img src="common/images/logo.png" alt="Test Creator LMS" />
+        </div>
+{include file='_side_menu.html' isJuku=$isJuku current='onigiri_quiz'}
+    </div>
+    <div id="contentArea">
+        <h2>テスト名</h2>
+
+        <h3 class="testTitle">{$jsonQuiz.title}</h3>
+
+        <table id="testDateDetail">
+            <tr>
+                <th>作成日時</th>
+                <td style="width: 200px">{$jsonQuiz.create_date|date_format:"%g-%m-%d"}</td>
+                <th>期間</th>
+                <td>{$jsonQuiz.open_date|date_format:"%g-%m-%d"} ～ {$jsonQuiz.expire_date|date_format:"%g-%m-%d"}</td>
+            </tr>
+        </table>
+
+        <div id="deliveryArea">
+            <h2>配信先</h2>
+            <div id="errors" class="caution">
+                {if !empty($errors)}
+                {foreach $errors as $error name='loop'}
+                {$error}<br />
+                {/foreach}
+                {/if}
+            </div>
+            <form id="deliveryRegistrationForm">
+                <input type="hidden" name="onigiri_json_quiz_id" value="{$jsonQuiz.id}" />
+                <table class="separateTable">
+                    <tr>
+                        <th class="checkboxCell"></th>
+                        <th>コード名</th>
+                        <th>発行者</th>
+                        <th style="width: 330px">コード</th>
+                        <th style="width: 70px">お知らせ</th>
+                    </tr>
+                    {foreach $records as $record name='loop'}
+                    <tr>
+                        <td class="checkboxCell"><input type="checkbox" name="delivery[]" value="{$record.lms_code_id}" id="lms_code_id_{$record.lms_code_id}" {if $record.is_delivery} checked{/if} /></td>
+                        <td>{$record.name}</td>
+                        <td>{if empty($record.teacher_name_1) && empty($record.teacher_name_2)}-{else}{$record.teacher_name_1} {$record.teacher_name_2}{/if}</td>
+                        <td>
+                            {$record.lms_code}
+                            <div class="rightButtonArea"><button class="normalButton middle quizDelivery" data-id="lms_code_id_{$record.lms_code_id}">配信</button></div>
+                        </td>
+                        <td>
+{if $record.is_delivery}
+    {if $record.notice_id}
+                            <button class="normalButton x-small delete" onclick="return deleteNotice('{$record.name}', '{$jsonQuiz.id}', '{$record.lms_code_id}')">削除</button>
+    {else}
+                            <button class="normalButton x-small disabled" onclick="return false">削除済</button>
+    {/if}
+{else}
+                            <button class="normalButton x-small disabled" onclick="return false">未配信</button>
+{/if}
+                        </td>
+                    </tr>
+                    {/foreach}
+                </table>
+                <div id="deliverySelected">
+                    <button class="normalButton">まとめて配信</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>

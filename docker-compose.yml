@@ -1,0 +1,120 @@
+version: '3.8'
+
+services:
+  # PHPアプリケーション
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: iizuna-lms-app
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/var/www/html
+      - ./app/config.ini:/var/www/html/app/config.ini
+    environment:
+      - PHP_VERSION=8.2
+      - AWS_ACCESS_KEY_ID=dummy
+      - AWS_SECRET_ACCESS_KEY=dummy
+      - AWS_DEFAULT_REGION=ap-northeast-1
+    depends_on:
+      - mysql-iizuna
+      - mysql-onigiri
+      - dynamodb-local
+    networks:
+      - iizuna-network
+
+  # iizunaLMS用MySQL
+  mysql-iizuna:
+    image: mysql:8.0
+    container_name: iizuna-lms-db
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: iizunaLMS
+      MYSQL_USER: iizunaLMS
+      MYSQL_PASSWORD: Gawbvgt2f983mru
+    volumes:
+      - mysql-iizuna-data:/var/lib/mysql
+      - ./setup_database/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    networks:
+      - iizuna-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ONIGIRI用MySQL
+  mysql-onigiri:
+    image: mysql:8.0
+    container_name: iizuna-onigiri-db
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: onigiri
+      MYSQL_USER: onigiri
+      MYSQL_PASSWORD: onigiri_pass
+    volumes:
+      - mysql-onigiri-data:/var/lib/mysql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    networks:
+      - iizuna-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # DynamoDB Local（開発用）
+  dynamodb-local:
+    image: amazon/dynamodb-local
+    container_name: iizuna-dynamodb
+    ports:
+      - "8000:8000"
+    command: -jar DynamoDBLocal.jar -sharedDb -inMemory
+    networks:
+      - iizuna-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # phpMyAdmin（DB管理ツール）
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: iizuna-phpmyadmin
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOSTS: mysql-iizuna,mysql-onigiri
+      PMA_USER: root
+      PMA_PASSWORD: rootpassword
+    depends_on:
+      - mysql-iizuna
+      - mysql-onigiri
+    networks:
+      - iizuna-network
+
+  # MailHog（開発用メールサーバー）
+  mailhog:
+    image: mailhog/mailhog
+    container_name: iizuna-mailhog
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    networks:
+      - iizuna-network
+
+volumes:
+  mysql-iizuna-data:
+  mysql-onigiri-data:
+
+networks:
+  iizuna-network:
+    driver: bridge
+

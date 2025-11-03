@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    {include file='_gtag.html'}
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex">
+    <title>Main</title>
+
+    {include file='_favicon.html'}
+
+    <link rel="stylesheet" href="../common/styles/reset.css" type="text/css">
+    <link rel="stylesheet" href="./common/styles/layout.css?20240120" type="text/css">
+    <link rel="stylesheet" href="./common/styles/folder.css" type="text/css">
+    <link rel="stylesheet" href="./common/styles/modal.css" type="text/css">
+    <script src="./common/scripts/preview.js?20230402"></script>
+    <script src="../common/scripts/jquery-3.6.0.min.js"></script>
+
+    <!-- flatpickr -->
+    <link rel="stylesheet" type="text/css" href="../common/flatpickr/flatpickr.min.css" />
+    <script src="../common/flatpickr/flatpickr.min.js"></script>
+    <script src="../common/flatpickr/l10n/ja.js"></script>
+
+    <script>
+        $(function() {
+            $('.qrCode').click(jumpQrPage);
+            $(".period").flatpickr({
+                'locale' : 'ja',
+                'dateFormat' : 'Y-m-d H:i',
+                enableTime  : true
+            });
+
+            var close = $('.modal-close'),
+                container = $('.modal-container');
+            $('.folderNode').on('click',changeFolder);
+
+            $('#folderName').on('click', function(){
+                $('.modal-container').addClass('active');
+                return false;
+            });
+
+            close.on('click', function(){
+                container.removeClass('active');
+            });
+
+            $(document).on('click', function(e) {
+                if(!$(e.target).closest('.modal-body').length) {
+                    container.removeClass('active');
+                }
+            });
+
+            $('.childrenFolder a').on('click', moveChildFolder);
+            $('.parentFolder a').on('click', moveChildFolder);
+            $('#resetButton').on('click', resetSearch);
+            $('#createNewTest').on('click', moveCreate);
+        });
+
+        function jumpQrPage() {
+            let id = $(this).data('id');
+            let options = 'width=1024px,height=800px,menubar=no';
+            window.open('./qr.php?school_id=' + id, 'QRCodeWindow', options);
+
+            return false;
+        }
+
+        function deleteQuiz(testName, quizId, caution) {
+            var message = "「" + testName + "」を削除します。\nよろしいですか？";
+
+            if (caution) {
+                message = "※このテストはすでに回答者がいます※\n削除した場合はテストの結果も削除されますのでご注意ください。\n\n"+ message
+            }
+
+            if (confirm(message)) {
+                $.ajax({
+                    url: 'quiz_delete.php',
+                    type: 'post',
+                    data: { 'quiz_id': quizId, '_csrf': '{$csrf}' },
+                    async : false,
+                    timeout: 30000,
+                })
+                .done(function(result) {
+                    if (result.error != null)
+                    {
+                        alert(result.error.message);
+                    }
+                    else if(result.result == 'OK')
+                    {
+                        alert('削除しました');
+                        location.reload();
+                    }
+                    else
+                    {
+                        alert('予期せぬエラーが発生しました');
+                    }
+                })
+                .fail(function(result) {
+                    alert('予期せぬエラーが発生しました');
+                });
+            }
+        }
+
+        function createConfirmLogin() {
+            if (confirm("ログイン確認用の簡易テストを作成します。\nよろしいですか？")) {
+                $.ajax({
+                    url: 'quiz_create_confirm_login.php',
+                    type: 'post',
+                    data: { '_csrf': '{$csrf}' },
+                    async : false,
+                    timeout: 30000,
+                })
+                .done(function(result) {
+                    if (result.error != null)
+                    {
+                        alert(result.error.message);
+                    }
+                    else if(result.result == 'OK')
+                    {
+                        alert('作成しました');
+                        location.reload();
+                    }
+                    else
+                    {
+                        alert('予期せぬエラーが発生しました');
+                    }
+                })
+                .fail(function(result) {
+                    alert('予期せぬエラーが発生しました');
+                });
+            }
+        }
+
+        var currentPage = {$currentPage};
+
+        function pageNext() {
+            movePage(1);
+        }
+
+        function pagePrev() {
+            movePage(-1);
+        }
+
+        function movePage(addValue) {
+            var nextPage = currentPage + addValue;
+            if (nextPage <= 0) nextPage = 1;
+
+            $('#page').val(nextPage);
+            $('#searchForm').submit();
+        }
+
+        function changeFolder() {
+            let id = $(this).data('id');
+            let folderName = $(this).html();
+
+            $('#folderName').html(folderName);
+            $('#parentFolderId').val(id);
+            $('.modal-container').removeClass('active');
+        }
+
+        function moveChildFolder() {
+            let id = $(this).data('id');
+
+            $('#parentFolderId').val(id);
+            $('#page').val('');
+            $('#title').val('');
+            $('#bookList').val('');
+            $('#teacher').val('');
+            $('#startDate').val('');
+            $('#endDate').val('');
+            $('#searchForm').submit();
+        }
+
+        function resetSearch() {
+            $('#parentFolderId').val(0);
+            $('#page').val('');
+            $('#title').val('');
+            $('#bookList').val('');
+            $('#teacher').val('');
+            $('#startDate').val('');
+            $('#endDate').val('');
+            $('#searchForm').submit();
+        }
+
+        function moveCreate()
+        {
+            let parentFolderId = $('#parentFolderId').val();
+            location.href='./quiz_create.php?parent_folder_id=' + parentFolderId;
+        }
+    </script>
+</head>
+<body>
+<div id="container">
+    <div id="menuArea">
+        <div id="logoArea">
+            <img src="common/images/logo.png" alt="Test Creator LMS" />
+        </div>
+{include file='_side_menu.html' isJuku=$isJuku current='index'}
+    </div>
+    <div id="contentArea">
+        <h2>ユーザー情報</h2>
+        <table id="userInformation">
+            <tr>
+                <th>学校名</th>
+                <td><div class="roundedBox">{$data.school_name}</div></td>
+                <th>都道府県</th>
+                <td><div class="roundedBox">{$data.school_pref}</div></td>
+            </tr>
+            <tr>
+                <th>先生名</th>
+                <td><div class="roundedBox">{$data.name_1} {$data.name_2}</div></td>
+                <th></th>
+                <td style="width: 15%"></td>
+            </tr>
+            <tr>
+                <th>学校コード</th>
+                <td><div class="roundedBox">
+                    {$data.lms_code}
+                    <button class="normalButton middle qrCode" data-id="{$data.school_id}">QRコード生成</button>
+                </div></td>
+                <th></th>
+                <td></td>
+            </tr>
+        </table>
+
+        <button class="normalButton xLarge" id="createNewTest">テスト新規作成</button>
+        {* 　<button class="normalButton xLarge" onclick="createConfirmLogin()">ログイン確認用テスト作成</button> *}
+
+        <form action="" method="get" id="searchForm" style="margin-bottom: 30px">
+            <input type="hidden" name="page" id="page" />
+            <table>
+                <tbody>
+                <tr>
+                    <td>テスト名</td>
+                    <td><input type="text" name="title" value="{$searchParams->title}" id="title" /></td>
+                    <td style="padding-left: 15px">書籍</td>
+                    <td>
+                        <select name="title_no" id="bookList" style="width: 400px">
+                            <option value=""></option>
+                            <optgroup label="英語">
+                                {if empty($bookList[0])}<option value=""> - </option>
+                                {else}{foreach $bookList[0] as $book name='loop'}
+                                <option value="{$book.title_no}" {if $searchParams->title_no==$book.title_no}selected{/if}>{$book.name}</option>
+                                {/foreach}{/if}
+                            </optgroup>
+                            <optgroup label="国語">
+                            {if empty($bookList[1])}<option value=""> - </option>
+                            {else}{foreach $bookList[1] as $book name='loop'}
+                            <option value="{$book.title_no}" {if $searchParams->title_no==$book.title_no}selected{/if}>{$book.name}</option>
+                            {/foreach}{/if}
+                            </optgroup>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>作成者</td>
+                    <td>
+                        <select name="teacher_id" id="teacher" style="width: 200px">
+                            <option value=""></option>
+                            {foreach $teachers as $teacher name='loop'}
+                            {$teacher|var_dump}
+                            <option value="{$teacher.id}" {if $searchParams->teacher_id==$teacher.id}selected{/if}>{$teacher.name_1} {$teacher.name_2}</option>
+                            {/foreach}
+                        </select>
+                    </td>
+                    <td style="padding-left: 15px">作成日</td>
+                    <td>
+                        <input type="text" name="start_date" value="{$searchParams->start_date}" style="width: 130px;" class="period" id="startDate" /> ～
+                        <input type="text" name="end_date" value="{$searchParams->end_date}" style="width: 130px;" class="period" id="endDate" />
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+            <div class="currentFolder">
+                <a href="javascript:void(0)" id="folderName">{$currentFolder.name}</a>
+                <input type="hidden" name="parent_folder_id" value="{$currentFolder.id}" id="parentFolderId" />
+            </div>
+            <input type="submit" value="検索" class="normalButton middle" />
+            <button class="normalButton middle disabled" id="resetButton">リセット</button>
+        </form>
+
+        <table class="separateTable">
+            <thead>
+            <tr>
+                <th>
+                    テスト名
+                    <hr />
+                    期間
+                </th>
+                <th style="width: 150px">
+                    作成者
+                    <hr />
+                    作成日時
+                </th>
+                <th style="width: 280px"></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td colspan="3">
+                    <div class="parentFolder">
+                        {if $currentFolder.id != 0}
+                        <a href="javascript:void(0)" data-id="{$currentFolder.parent_folder_id}">上のフォルダへ</a>
+                        {else}
+                        上のフォルダへ
+                        {/if}
+                    </div>
+                </td>
+            </tr>
+            {foreach $childrenFolders as $childrenFolder name='loop'}
+            <tr>
+                <td colspan="3">
+                    <div class="childrenFolder">
+                        <a href="javascript:void(0)" data-id="{$childrenFolder.id}">{$childrenFolder.name}</a>
+                    </div>
+                </td>
+            </tr>
+            {/foreach}
+
+{if !empty($records)}
+            {foreach $records as $record name='loop'}
+            {assign var=isMyRecord value=0}
+            {if $record.teacher_id == $teacherId}{assign var=isMyRecord value=1}{/if}
+            <tr>
+                <td>
+                    {$record.title}
+                    <hr />
+                    {if empty($record.open_date) && empty($record.expire_date)} -
+                    {else} {if !empty($record.open_date)}{$record.open_date|date_format:"%g-%m-%d %H:%M"}{/if} ～ {$record.expire_date|date_format:"%g-%m-%d %H:%M"}  {/if}
+                </td>
+                <td>
+                    {$record.teacher_name_1} {$record.teacher_name_2}
+                    <hr />
+                    {$record.create_date|date_format:"%g-%m-%d %T"}
+                </td>
+                <td>
+                    <div>
+{if $isMyRecord}
+                        <button class="normalButton x-small {if !$record.is_delivery}blue{/if}" onclick="window.location.href='./quiz_delivery.php?quiz_id={$record.id}'">配信</button>
+                        <button class="normalButton small" onclick="window.location.href='./quiz_result_list.php?quiz_id={$record.id}'">結果一覧</button>
+                        <button class="normalButton x-small" onclick="window.location.href='./quiz_statistics.php?quiz_id={$record.id}'">統計</button>
+{/if}
+                        <button class="normalButton small" onclick="openPreview('{$record.id}')">プレビュー</button>
+                    </div>
+                    <div style="margin-top: 5px">
+
+{if $isMyRecord}
+                        <button class="normalButton middle" onclick="window.location.href='./quiz_create.php?quiz_id={$record.id}'">範囲修正・再生成</button>
+                        <button class="normalButton x-small delete" onclick="deleteQuiz('{$record.title}', {$record.id}, {if $record.result_num == 0}false{else}true{/if})">削除</button>
+{else}
+                        <button class="normalButton middle" onclick="window.location.href='./quiz_create.php?quiz_id={$record.id}'">範囲確認</button>
+{/if}
+                        <button class="normalButton middle" onclick="openResultPreview('{$record.id}')" style="width: 108px;">解答付きプレビュー</button>
+                    </div>
+                </td>
+            </tr>
+            {/foreach}
+{/if}
+            </tbody>
+        </table>
+
+{if empty($records)}
+        データがありません。
+{else}
+        <div id="historyPageControl">
+            <button class="prev normalButton x-small {if $currentPage == 1}disabled{/if}" {if $currentPage > 1}onclick="pagePrev()"{/if}>前へ</button>
+            <button class="next normalButton x-small {if $currentPage >= $maxPageNumber}disabled{/if}" {if $currentPage < $maxPageNumber}onclick="pageNext()"{/if}>次へ</button>
+        </div>
+{/if}
+    </div>
+</div>
+
+<div class="modal-container">
+    <div class="modal-body">
+        <div class="modal-close">×</div>
+        <div class="modal-content">
+            <div id="choiceFolderContent">
+                <div id="folderManagementButton">
+                    <button class="normalButton middle" onclick="window.location.href='./quiz_folder.php'">フォルダ管理</button>
+                </div>
+                <ul class="folderTree">
+                    <li>
+                        <a href="javascript:void(0)" data-id="all" data-parent_folder_id="0" data-teacher_id="0" class="folderNode">全てのフォルダ</a>
+                    </li>
+                </ul>
+                {$folderListHtml}
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

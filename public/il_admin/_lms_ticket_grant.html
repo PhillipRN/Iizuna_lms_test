@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <meta name="robots" content="noindex">
+    <title>管理画面</title>
+
+    {include file='_favicon.html'}
+
+    <link rel="stylesheet" href="../common/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="./common/style.css?202201292100" type="text/css">
+    <link rel="stylesheet" href="./common/admin.css?202303261524" type="text/css">
+    <script src="common/scripts/admin.js"></script>
+    <script src="../common/scripts/jquery-3.6.0.min.js"></script>
+    <script src="../common/scripts/common.js"></script>
+    <script src="../common/scripts/validation.js"></script>
+    <script type="text/javascript">
+        $(function() {
+            $("#filterSchool").on('click', filterSchool);
+            $("#schoolList").on('change', filterTeacher);
+            $("#grantForm").submit(grantRegister);
+        });
+
+        function filterSchool() {
+            $('#errors').html('');
+
+            let keyWord = $("#keyWord").val();
+
+            if (keyWord == '') {
+                $('#errors').html('学校の名前の一部を入力してください。');
+                return false;
+            }
+
+            $.ajax({
+                url: 'form_school.php',
+                type: 'post',
+                data: { 'key_word': keyWord },
+                timeout: 30000,
+            })
+            .done(function(result) {
+                if (result.result =='OK')
+                {
+                    var data = result.records;
+
+                    let schoolList = $('#schoolList');
+                    schoolList.empty();
+
+                    if (data.length == 0) {
+                        schoolList.append( $('<option>').html('該当する学校が見つかりませんでした。').val('') );
+                        return false;
+                    }
+                    else
+                    {
+                        schoolList.append( $('<option>').html('-').val('') );
+
+                        for (var i=0; i<data.length; ++i) {
+                            schoolList.append( $('<option>').html(data[i].name).val(data[i].id) );
+                        }
+                    }
+                    return false;
+                } else if (result.error != null)
+                {
+                    $('#errors').html(result.error['message']);
+                    return false;
+                }
+                else
+                {
+                    alert('エラーが発生しました。');
+                    return false;
+                }
+            })
+            .fail(function(result) {
+                alert('エラーが発生しました。');
+                return false;
+            });
+
+            return false;
+        }
+
+        function filterTeacher() {
+            $('#errors').html('');
+            let teacherList = $('#teacherList');
+            let schoolId = $("#schoolList").val();
+
+            if (schoolId == '') {
+                teacherList.empty();
+                teacherList.append( $('<option>').html('-').val('') );
+                return false;
+            }
+
+            $.ajax({
+                url: 'form_teacher.php',
+                type: 'post',
+                data: { 'school_id': schoolId },
+                timeout: 30000,
+            })
+            .done(function(result) {
+                if (result.result =='OK')
+                {
+                    var data = result.records;
+                    teacherList.empty();
+
+                    if (data.length == 0) {
+                        teacherList.append( $('<option>').html('-').val('') );
+                        return false;
+                    }
+                    else
+                    {
+                        teacherList.append( $('<option>').html('-').val('') );
+
+                        for (var i=0; i<data.length; ++i) {
+                            teacherList.append( $('<option>').html(data[i].name_1 + ' ' + data[i].name_2).val(data[i].id) );
+                        }
+                    }
+                    return false;
+                } else if (result.error != null)
+                {
+                    $('#errors').html(result.error['message']);
+                    return false;
+                }
+                else
+                {
+                    alert('エラーが発生しました。');
+                    return false;
+                }
+            })
+            .fail(function(result) {
+                alert('エラーが発生しました。');
+                return false;
+            });
+
+            return false;
+        }
+
+        function grantRegister() {
+            $('#errors').html('');
+
+            let quantity = $("#quantity").val();
+            if (!isPositiveInteger(quantity)) {
+                $('#errors').html('チケット数を正しく入力してください。');
+                return false;
+            }
+
+{if empty($school)}
+            let teacher = $("#teacherList").val();
+            if (teacher == '') {
+                $('#errors').html('先生を選択してください。');
+                return false;
+            }
+{/if}
+
+            let form = $("#grantForm");
+
+            $.ajax({
+                url: 'lms_ticket_grant_register.php',
+                type: 'post',
+                data: form.serialize(),
+                timeout: 30000,
+
+            })
+            .done(function(result) {
+                if (result.result =='OK')
+                {
+                    alert('付与しました。');
+{if !empty($school)}
+                    location.href = 'school.php?id={$school.id}';
+{else if !empty($backApplicationListPage)}
+                    location.href = 'lms_ticket_application_list.php?page={$backApplicationListPage}';
+{else}
+                    location.href = 'lms_ticket_application_list.php';
+{/if}
+                    return;
+                } else if (result.error != null)
+                {
+                    $('#errors').html(result.error['message']);
+                    return;
+                }
+                else
+                {
+                    alert('エラーが発生しました。');
+                    return;
+                }
+            })
+            .fail(function(result) {
+                alert('エラーが発生しました。');
+                return;
+            });
+
+            return false;
+        }
+    </script>
+</head>
+<body>
+{if !empty($school)}
+<p style="margin: 10px;"><a href="school.php?id={$school.id}">戻る</a></p>
+{else if !empty($backApplicationListPage)}
+<p style="margin: 10px;"><a href="lms_ticket_application_list.php?page={$backApplicationListPage}">戻る</a></p>
+{else}
+<p style="margin: 10px;"><a href="lms_ticket_application_list.php">戻る</a></p>
+{/if}
+<hr />
+<div id="contents">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-8"><h1>LMSチケット付与</h1></div>
+        </div>
+    </div>
+
+    <div id="errors" class="text-danger error"></div>
+    <form method="post" id="grantForm">
+{if !empty($school)}
+        <input type="hidden" name="school_id" value="{$school.id}" />
+{/if}
+        <table class="table table-hover table-bordered">
+            <tbody>
+            <tr>
+                <th scope="col">学校</th>
+                <td>
+{if !empty($school)}
+                    {$school.name}
+{else}
+                    <input type="text" value="" placeholder="学校の名前の一部を入力" id="keyWord" /> <button class="btn btn-primary btn-sm" id="filterSchool">絞り込み</button>
+                    <br />
+                    <select style="margin: 5px; min-width: 300px" id="schoolList">
+                        <option value="">まずは絞り込みを実行してください</option>
+                    </select>
+{/if}
+                </td>
+            </tr>
+{if empty($school)}
+            <tr>
+                <th scope="col">先生</th>
+                <td>
+                    <select name="teacher_id" style="margin: 5px; min-width: 300px" id="teacherList">
+                        <option value="">-</option>
+                    </select>
+                </td>
+            </tr>
+{/if}
+            <tr>
+                <th scope="col">種別</th>
+                <td>
+                    <select name="title_no" style="margin: 5px;">
+                        {foreach $ticketTypes as $ticketType}
+                        <option value="{$ticketType.title_no}">{$ticketType.name}</option>
+                        {/foreach}
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th scope="col">期限</th>
+                <td>
+                    <select name="expire_year" style="margin: 5px; width: 100px">
+                        {for $value=0 to 10}
+                        <option value="{$currentYear + $value}">{$currentYear + $value}</option>
+                        {/for}
+                    </select> 年
+                    <select name="expire_month" style="margin: 5px; width: 80px">
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                        <option value="9">9</option>
+                        <option value="10">10</option>
+                        <option value="11">11</option>
+                        <option value="12">12</option>
+                    </select> 月 まで
+                </td>
+            </tr>
+            <tr>
+                <th scope="col">チケット数</th>
+                <td>
+                    <input type="text" name="quantity" id="quantity" onchange="zen2han(this)" />
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        <button class="btn btn-primary btn-sm">付与する</button>
+    </form>
+</div>
+</body>
+</html>

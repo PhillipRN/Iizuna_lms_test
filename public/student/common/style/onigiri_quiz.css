@@ -1,0 +1,241 @@
+body {
+	max-width: 550px;
+	background-color: white;
+}
+
+
+.onigiri_quiz_information {
+    margin-top: 40px;
+    text-align: center;
+    color: #EA6182;
+    font-weight: bold;
+}
+
+.onigiri_quiz_information .button_area,
+.onigiri_quiz_result .button_area{
+    margin-top: 30px;
+    text-align: center;
+}
+
+.onigiri_quiz_information .button_area button {
+    width: 150px;
+}
+
+#onigiri_quiz_header {
+    position: relative;
+    width: 100%;
+}
+
+#onigiri_quiz_back_button {
+    position: absolute;
+    left: 0;
+}
+
+#onigiri_quiz_question_number {
+    position: absolute;
+    right: 0;
+    text-align: right;
+}
+
+.onigiri_quiz_body {
+    font-size: 2em;
+    font-weight: bold;
+    text-align: center;
+}
+
+.onigiri_quiz_body_small {
+    font-size: 1em;
+    font-weight: bold;
+    text-align: center;
+}
+
+.onigiri_quiz_hint_area {
+    margin-top: 30px;
+    height: 50px;
+    text-align: center;
+    margin-bottom: 100px;
+}
+
+.onigiri_quiz_choices_area {
+    margin-top: 30px;
+    text-align: center;
+}
+
+.onigiri_quiz_choices_area button {
+    margin-bottom: 10px;
+    width: 90%;
+    text-align: left;
+}
+
+#onigiri_quiz_footer_button_area {
+    margin-top: 50px;
+    text-align: center;
+}
+
+.onigiri_quiz_choices_area .wrong_answer span {
+    opacity: 0.5;
+}
+
+.onigiri_quiz_choices_area button {
+    position: relative;
+}
+
+.onigiri_quiz_choices_area button.user_correct span::before {
+    position: absolute;
+    left: 5px;
+    content: '';
+    background-image: url(../images/icon_correct.png);
+    width: 30px;
+    height: 30px;
+    display: inline-block;
+    background-size: contain;
+    vertical-align: middle;
+}
+
+.onigiri_quiz_choices_area button.user_wrong span::before {
+    position: absolute;
+    left: 5px;
+    content: '';
+    background-image: url(../images/icon_wrong.png);
+    width: 30px;
+    height: 30px;
+    display: inline-block;
+    background-size: contain;
+    vertical-align: middle;
+}
+
+.onigiri_quiz_input_area {
+    position: relative;
+    width: 300px;
+    margin: 30px auto 0;
+    text-align: center;
+}
+
+.onigiri_quiz_input_area input {
+    width: 100%;
+}
+
+.onigiri_quiz_input_area .user_correct {
+    display: none;
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    content: '';
+    background-image: url(../images/icon_correct.png);
+    width: 30px;
+    height: 30px;
+    background-size: contain;
+    vertical-align: middle;
+}
+
+.onigiri_quiz_input_area .user_wrong {
+    display: none;
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    content: '';
+    background-image: url(../images/icon_wrong.png);
+    width: 30px;
+    height: 30px;
+    background-size: contain;
+    vertical-align: middle;
+}
+
+.onigiri_quiz_input_answer {
+    display: none;
+    margin-top: 15px;
+    text-align: center;
+    font-size: 1.2em;
+}
+
+.sound_button {
+    border: none;
+    background-color: transparent;
+}
+
+.btn-secondary {
+	border-radius: 30px;
+	border: none;
+	background-color: #EA6182;
+	padding:5px 30px;
+	
+}
+.btn-secondary:hover {
+	border-radius: 30px;
+	border: none;
+	background-color: #ffffff;
+	border: solid 1px #EA6182;
+	padding:5px 30px;
+	color: #EA6182;
+}
+
+.btn-primary {
+	border-radius: 30px;
+	border: none;
+	background-color: #EA6182;
+	
+}
+.btn-primary:hover {
+	border-radius: 30px;
+	border: none;
+	background-color: #ffffff;
+	border: solid 1px #EA6182;
+	padding:5px 30px;
+	color: #EA6182;
+}
+
+#header_title {
+	margin-top: 40px;
+}
+
+.onigiri_quiz_result_score {
+    margin-top: 30px;
+    text-align: center;
+    font-size: 1.5em;
+    color: #EA6182;
+    margin-bottom: 15px;
+}
+
+.onigiri_quiz_result_score span {
+    font-size: 2em;
+    font-weight: bold;
+}
+
+.onigiri_quiz_result_table .header {
+    padding: 5px 0;
+    background-color: #0d6efd;
+    border-radius: 10px 10px 0 0;
+    text-align: center;
+    color: #fff;
+}
+
+.onigiri_quiz_result_table {
+	width: 95%;
+	margin: 0 auto 40px auto;
+}
+
+.onigiri_quiz_result_table .body {
+    background-color: #fff;
+    border-radius: 0 0 10px 10px;
+    border: solid 1px #EA6182;
+}
+
+.onigiri_quiz_result_table .body .wrapper {
+    padding: 10px 20px;
+    height: 395px;
+    overflow-y: auto;
+}
+
+.onigiri_quiz_result_table .body table {
+    width: 100%;
+    
+}
+
+.onigiri_quiz_result_table .body .mean {
+    font-size: 0.6em;
+    line-height: 0.6em;
+}
+
+.letter_spacing {
+    letter-spacing: 0.2em;
+}

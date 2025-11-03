@@ -1,0 +1,49 @@
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+docs/
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Dependencies (will be installed in container)
+vendor/
+
+# Runtime
+app/smarty_template_c/
+app/Temps/
+app/Assets/Sounds/
+
+# Config files (will be copied separately)
+app/config.ini
+app/token.ini
+app/firebase_auth.json
+
+# Database
+setup_database/ebook/export/*
+setup_database/ebook/import/*
+setup_database/iizuna_lms/export/*
+setup_database/iizuna_lms/import/*
+
+# Testing
+.phpunit.result.cache
+phpunit
+
+# Web server config
+.htaccess
+.htpasswd
+
+# Logs
+*.log
+

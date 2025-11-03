@@ -1,0 +1,479 @@
+body {
+	font-family: "Helvetica Neue", "Helvetica", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Arial", "Yu Gothic", "Meiryo", sans-serif;
+	color: black;
+}
+
+
+  
+#container {
+    width: 1024px;
+    margin: 0 auto;
+    display: flex;
+}
+
+#menuArea {
+    width: 180px;
+    position: relative;
+}
+
+#menuArea:before {
+    position: absolute;
+    right: -1px;
+    bottom: 0;
+    width: 1px;
+    height: 100%;
+    content: '';
+    background: #666;
+}
+
+#contentArea {
+    width: 814px;
+    padding: 30px 15px;
+}
+
+#logoArea {
+    padding: 30px 0 60px;
+}
+
+#logoArea img {
+    width: 60px;
+    margin: 0 auto;
+    border: 1px solid #666;
+    border-radius: 6px;
+}
+
+.menu {
+    padding-left: 30px;
+}
+
+.secondMenu {
+    margin-top: 150px;
+}
+
+.menu li {
+    list-style: none;
+    font-weight: bold;
+    font-size: 1.2em;
+    position: relative;
+    border-bottom: 1px solid #666;
+    padding-bottom: 0;
+    margin-bottom: 40px;
+}
+
+.menu li.current:before {
+    position: absolute;
+    left: 0;
+    bottom: -2px;
+    width: 75%;
+    height: 4px;
+    font-size: 1.2em;
+    content: '';
+    background: #f5c520;
+}
+
+.menu li.sub {
+    margin-left: 20px;
+    font-size: 0.9em;
+}
+
+.menu a {
+    color: #000;
+    text-decoration: none;
+}
+
+#loginForm {
+    margin-top: 120px;
+    padding-bottom: 100px;
+}
+
+#loginForm th {
+    width: 200px;
+    padding: 40px 20px 40px 0;
+    text-align: right;
+}
+
+#loginForm td input {
+    width: 350px;
+}
+
+#loginForm .submitButton {
+    display: block;
+    width: 150px;
+    height: 40px;
+    margin: 0 auto;
+    font-weight: bold;
+    background-color: #fff;
+    border: 1px solid #666;
+    border-radius: 8px;
+    cursor: pointer;
+  
+}
+
+input[type="submit"] {
+  appearance: none;
+  -webkit-appearance: none;
+  }
+
+h2 {
+    list-style: none;
+    font-weight: bold;
+    font-size: 1.2em;
+    position: relative;
+    border-bottom: 1px solid #666;
+    padding-bottom: 0;
+    margin-bottom: 20px;
+}
+
+h2:before {
+    position: absolute;
+    left: 0;
+    bottom: -2px;
+    width: 200px;
+    height: 4px;
+    content: '';
+    background: #f5c520;
+}
+
+
+
+
+#userInformation {
+    width: 100%;
+    font-size: 1.2em;
+}
+
+#userInformation th {
+    width: 18%;
+    text-align: left;
+    padding-left: 15px;
+}
+
+#userInformation td {
+    padding: 5px 0;
+}
+
+.roundedBox {
+    position: relative;
+    padding: 15px 20px;
+    border: 1px solid #666;
+    border-radius: 10px;
+    line-height: 1em;
+}
+
+.roundedBox button {
+    position: absolute;
+    right: 20px;
+    top: 12px;
+}
+
+.normalButton {
+    padding: 8px 0;
+    background-color: #ffcf4d;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.5em;
+    font-weight: bold;
+    line-height: 1em;
+    cursor: pointer;
+    margin: 3px 0px 1px 3px;
+    color:#000;
+}
+
+.normalButton.xLarge {
+    width: 300px;
+    font-size: 0.8em;
+    color:#000;
+}
+
+.normalButton.large {
+    width: 150px;
+    font-size: 0.8em;
+    color:#000;
+}
+
+.normalButton.x-small {
+    width: 40px;
+    color:#000;
+}
+
+.normalButton.small {
+    width: 80px;
+    color:#000;
+}
+
+.normalButton.middle {
+    width: 100px;
+    color:#000;
+}
+
+.normalButton.delivery {
+    width: 125px;
+    background-color: #4da5ff;
+    color: #fff;
+}
+
+.normalButton.disabled {
+    background-color: #999;
+}
+
+.normalButton.delete {
+    background-color: #ff824b;
+}
+
+.normalButton.blue {
+    background-color: #4da5ff;
+    color: #fff;
+}
+
+#createNewTest {
+    margin: 60px 0;
+}
+
+table.separateTable {
+    width: 100%;
+    border-spacing: 3px;
+}
+
+table.separateTable th,
+table.separateTable td {
+    position: relative;
+    padding: 2px 4px;
+    border: 1px solid #666;
+    font-size: 0.8em;
+}
+.testtd {
+	overflow-x: auto;
+	width: 195px;
+}
+.testtd2 {
+	overflow-x: auto;
+	width: 100px;
+}
+.testtd3 {
+	overflow-x: auto;
+	width: 70px;
+}
+.testtd4 {
+    overflow-x: auto;
+    width: 70px;
+}
+
+
+h3.testTitle {
+    font-size: 2em;
+    padding-bottom: 20px;
+}
+
+#testDateDetail td,
+#testDateDetail th {
+    font-weight: bold;
+}
+
+#testDateDetail th {
+    text-align: left;
+    padding-right: 20px;
+    font-size: 0.8em;
+}
+
+#testDateDetail td {
+    font-size: 1.5em;
+}
+
+#deliveryArea,
+#codeList {
+    margin-top: 80px;
+}
+
+#deliveryArea td,
+#deliveryArea th,
+#codeList td,
+#codeList th {
+    text-align: left;
+    vertical-align: middle;
+}
+
+#deliveryArea td,
+#codeList td {
+    position: relative;
+    font-size: 1.2em;
+}
+
+.checkboxCell {
+    width: 20px;
+    border: none !important;
+    text-align: center;
+}
+
+#deliverySelected {
+    margin-top: 15px;
+    text-align: center;
+}
+
+#deliverySelected .normalButton {
+    width: 180px;
+    padding: 10px 0;
+    font-size: 0.8em;
+}
+
+#resultClass {
+    margin-bottom: 10px;
+}
+
+#resultTable .name {
+    min-width: 150px !important;
+    border-right: none !important;
+}
+
+#resultTable th,
+#resultTable td {
+    padding: 4px;
+    border-right: 1px solid #666;
+    border-bottom: 1px solid #666;
+    border-top: 1px solid #666;
+    font-weight: normal;
+    text-align: left;
+}
+
+#quizHistory {
+    margin-top: 40px;
+}
+
+.caution {
+    color: #d00;
+}
+
+#bookList {
+    /*margin-top: 100px;*/
+}
+
+#bookList table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#bookList td,
+#bookList th {
+    padding: 8px;
+    border: 1px solid #666;
+}
+
+input.borderBox {
+    width: 600px;
+    padding: 10px;
+    border: 1px solid #666;
+    border-radius: 10px;
+}
+
+#addBook .buttonArea,
+#addCode .buttonArea,
+#addStudent .buttonArea,
+#applicationBook .buttonArea {
+    margin-top: 15px;
+}
+
+#addBook .normalButton,
+#addCode .normalButton,
+#addStudent .normalButton ,
+#applicationBook .normalButton {
+    width: 130px;
+    padding: 10px 0;
+    font-size: 0.8em;
+}
+
+#applicationBook .normalButton.small {
+    width: 80px;
+}
+
+#containerQrPae {
+    margin: 0 auto;
+}
+
+#backButtonArea {
+    padding-top: 40px;
+}
+
+#backButtonArea button {
+    width: 120px;
+    padding: 10px 0;
+}
+
+.qrArea {
+    margin-bottom: 100px;
+}
+
+.qrArea .codeTitle {
+    padding: 50px 0;
+    font-weight: bold;
+    font-size: 1.8em;
+    text-align: center;
+}
+
+.qrArea .code {
+    margin-top: 30px;
+    font-weight: bold;
+    font-size: 1.8em;
+    text-align: center;
+}
+
+.qrArea .qrCode {
+    margin: 0 auto;
+    width: 300px;
+}
+
+.classFormIsPaid {
+    margin-top: 15px;
+}
+
+#studentButtonArea {
+    margin-top: 20px;
+    text-align: center;
+}
+
+#studentButtonArea .normalButton {
+    width: 180px;
+    margin-right: 25px;
+    font-size: 0.8em;
+}
+
+#studentButtonArea .normalButton:last-child {
+    margin-right: 0px;
+}
+
+.rightButtonArea {
+    position: absolute;
+    top: 50%;
+    right: 5px;
+    transform: translate(0, -50%);
+    -webkit-transform: translate(0, -50%);
+    -ms-transform: translate(0, -50%);
+}
+
+.centerButtonArea {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    -webkit-transform: translate(-50%, -50%);
+    -ms-transform: translate(-50%, -50%);
+}
+
+#bookApplicationForm table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#bookApplicationForm td,
+#bookApplicationForm th {
+    padding: 8px;
+    border: 1px solid #666;
+}
+
+.download-btn {
+    color: #fff;
+    background-color: #6c757d;
+    border: 1px solid #6c757d;
+    padding: 0.375rem 0.75rem;
+    font-size: 1rem;
+    BORDER-RADIUS: 0.25rem;
+    text-decoration: none;
+}

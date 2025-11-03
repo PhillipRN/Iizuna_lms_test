@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    {include file='_gtag.html'}
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex">
+    <title>Student</title>
+
+    {include file='_favicon.html'}
+
+    <link rel="stylesheet" href="../common/styles/reset.css" type="text/css">
+    <link rel="stylesheet" href="./common/styles/layout.css?20240120" type="text/css">
+    <link rel="stylesheet" href="./common/styles/scroll_box.css" type="text/css">
+    <link rel="stylesheet" href="../common/tablesorter/css/theme.default.min.css" type="text/css">
+    <script src="./common/scripts/preview.js"></script>
+    <script src="../common/scripts/jquery-3.6.0.min.js"></script>
+    <script src="../common/tablesorter/js/jquery.tablesorter.min.js"></script>
+    <script src="./common/scripts/student-manager.js"></script>
+    <script src="./common/scripts/student-csv-upload.js?20250327"></script>
+
+    <style>
+        .orderCell {
+            position: relative;
+        }
+
+        .orderArrows {
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            user-select: none;
+        }
+
+        .orderArrows .upward,
+        .orderArrows .downward {
+            font-size: 12px;
+            line-height: 12px;
+            position: absolute;
+            right: 2px;
+            top: 50%;
+            transform: translateY(-50%);
+            -webkit-transform: translateY(-50%);
+            -ms-transform: translateY(-50%);
+        }
+
+        .orderArrows .upward {
+            margin-top: -5px;
+        }
+
+        .orderArrows .downward {
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+<div id="container">
+    <div id="menuArea">
+        <div id="logoArea">
+            <img src="common/images/logo.png" alt="Test Creator LMS" />
+        </div>
+{include file='_side_menu.html' isJuku=$isJuku current='student'}
+    </div>
+
+    <div id="contentArea">
+        <input type="hidden" id="csrf" value="{$csrf}" />
+        <form method="get" action="" id="displayForm">
+            <select name="lcid" id="resultClass">
+                {foreach $schoolGroups as $schoolGroup name='loop'}
+                <option value="{$schoolGroup.lms_code_id}" {if $currentLmsCodeId==$schoolGroup.lms_code_id}selected{/if}>{$schoolGroup.name}</option>
+                {/foreach}
+            </select>
+            <input type="hidden" name="sn" value="{$sortStudentNumber}" id="sortStudentNumber" />
+            <button type="button" id="csvUploadBtn" class="normalButton small">CSV新規登録</button>
+        </form>
+        <div>
+            <a href="student_download_csv.php?lcid={$currentLmsCodeId}" download="result_{$currentSchoolGroup.name}.csv" class="download-btn">CSVダウンロード</a>
+        </div>
+
+        <br />
+
+        <div id="studentList">
+            <h2>生徒一覧</h2>
+            <div id="bulkOperations" style="margin-bottom: 15px;">
+                <label for="bulkActionSelect">一括操作</label><br />
+                <select id="bulkActionSelect">
+                    <option value=""></option>
+                    <option value="code">コード登録</option>
+                    <option value="delete">生徒削除</option>
+                    <option value="password">パスワードリセット</option>
+                </select>
+
+                <!-- コード登録時に表示されるクラス選択ドロップダウン -->
+                <select id="bulkCodeSelect" style="display: none;">
+                    {foreach $schoolGroups as $schoolGroup name='loop'}
+                    <option value="{$schoolGroup.lms_code_id}">{$schoolGroup.name}</option>
+                    {/foreach}
+                </select>
+
+                <button id="bulkActionExecute" class="normalButton small">実行</button>
+            </div>
+            <table class="separateTable">
+                <thead>
+                <tr>
+                    <th style="width: 30px;"><input type="checkbox" id="selectAll" /></th>
+                    <th style="width: 350px">氏名</th>
+                    <th class="orderCell" id="studentNumberHeader">
+                        学籍番号
+                        <div class="orderArrows">
+                            <div class="upward">{if $sortStudentNumber != 2}▲{/if}</div>
+                            <div class="downward">{if $sortStudentNumber != 1}▼{/if}</div>
+                        </div>
+                    </th>
+                    <th>ログインID</th>
+                    <th>登録済みコード</th>
+                    <th style="width: 60px">操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                {foreach $records as $record name='loop'}
+                <tr>
+                    <td style="text-align: center;"><input type="checkbox" class="student-checkbox" data-student-id="{$record.student_id}" data-student-name="{$record.student_name}" data-login-id="{$record.login_id}" /></td>
+                    <td>{$record.student_name}</td>
+                    <td>{if $record.student_number}{$record.student_number}{else}&nbsp;{/if}</td>
+                    <td>{$record.login_id}</td>
+                    <td>{$record.lms_code_names|format_lms_codes}</td>
+                    <td>
+                        <button class="normalButton x-small" onclick="window.location.href='./student_edit.php?id={$record.student_id}'">編集</button>
+                    </td>
+                </tr>
+                {/foreach}
+                </tbody>
+            </table>
+
+            <div id="pageControl">
+                <button class="prev normalButton x-small page-nav-btn {if $currentPage == 1}disabled{/if}"
+                        {if $currentPage > 1}data-page="{$currentPage - 1}"{/if}
+                    {if $currentPage == 1}disabled="disabled"{/if}>
+                    前へ
+                </button>
+
+                <button class="next normalButton x-small page-nav-btn {if $currentPage >= $maxPageNumber}disabled{/if}"
+                        {if $currentPage < $maxPageNumber}data-page="{$currentPage + 1}"{/if}
+                {if $currentPage >= $maxPageNumber}disabled="disabled"{/if}>
+                次へ
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <meta name="robots" content="noindex">
+    <title>管理画面</title>
+
+    {include file='_favicon.html'}
+
+    <link rel="stylesheet" href="../common/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="./common/style.css?202201292100" type="text/css">
+    <link rel="stylesheet" href="./common/admin.css?202303261524" type="text/css">
+    <script src="../common/scripts/jquery-3.6.0.min.js"></script>
+    <script src="common/scripts/admin.js"></script>
+    <script type="text/javascript">
+        $(function() {
+            $('#updateForm').submit(registrationSubmit);
+        });
+        let applicationAmount = {$record.application_amount};
+
+        function registrationSubmit() {
+            let form = $('#updateForm');
+
+            var errors = [];
+
+            let available_amount = $('#available_amount').val();
+
+            if (available_amount == '') {
+                errors.push('許可人数を入力してください。');
+            }
+            else if (available_amount <= 0) {
+                errors.push('許可人数は1以上の数値で入力してください。');
+            }
+            else if (available_amount < applicationAmount) {
+                if (!confirm("許可人数が申請人数より少なくなっています。\nよろしいですか？")) {
+                    return false;
+                }
+            }
+
+            if (errors.length != 0) {
+                $('#errors').html(errors.join('<br>'));
+                $(window).scrollTop($('#errors').position().top);
+            }
+            else {
+                if (!confirm(available_amount +" 人で許可します。\n登録後に修正することはできません。")) {
+                    return false;
+                }
+
+                $('#errors').html('');
+
+                $.ajax({
+                    url: 'lms_code_application_update_register.php',
+                    type: 'post',
+                    data: form.serialize(),
+                    timeout: 30000,
+                })
+                    .done(function(result) {
+                        if (result.error != null)
+                        {
+                            $('#errors').html(result.error['message'] + ' (' + result.error['code'] + ')');
+                            return;
+                        }
+                        else if (result.result == 'OK')
+                        {
+                            alert('更新しました。');
+                            window.location = 'lms_code_application_list.php?p={$backPage}';
+                            return;
+                        }
+                        else
+                        {
+                            alert('エラーが発生しました。');
+                            return;
+                        }
+                    })
+                    .fail(function(result) {
+                        alert('エラーが発生しました。');
+                        return;
+                    });
+            }
+
+            return false;
+        }
+    </script>
+</head>
+<body>
+<p style="margin: 10px;"><a href="lms_code_application_list.php?p={$backPage}">戻る</a></p>
+<hr />
+<div id="contents">
+    <div class="container-fluid">
+        <div class="row">
+            <div><h1>e-ONIGIRI英単語人数制限有料コード操作</h1></div>
+        </div>
+    </div>
+
+    <div id="errors" class="error"></div>
+
+    <table class="table table-striped table-hover table-bordered">
+        <tr>
+            <th scope="col">申請日時</th>
+            <td>{$record.create_date|date_format:"%Y-%m-%d %T"}</td>
+        </tr>
+        <tr>
+            <th scope="col">学校/氏名</th>
+            <td>
+                {$record.school_name}<br />
+                {if empty($record.teacher_name_1) && empty($record.teacher_name_2)}-{else}{$record.teacher_name_1} {$record.teacher_name_2}{/if}
+            </td>
+        </tr>
+        <tr>
+            <th scope="col">グループコード</th>
+            <td>{$record.group_name}</td>
+        </tr>
+        <tr>
+            <th scope="col">ステータス</th>
+            <td>
+                {if $record.paid_application_status == 1}
+                申請中
+                {else if $record.paid_application_status == 2}
+                追加申請中
+                {else}
+                許可済
+                {/if}
+            </td>
+        </tr>
+        <tr>
+            <th scope="col">申請人数</th>
+            <td>{$record.application_amount} 人</td>
+        </tr>
+        <tr>
+            <th scope="col">許可人数</th>
+            <td>
+            {if $record.paid_application_status == 0}
+                {$record.available_amount} 人
+            {else}
+                <form id="updateForm">
+                    <input type="hidden" name="id" value="{$record.id}" />
+                    <input type="number" name="available_amount" value="{$record.application_amount}" id="available_amount" style="width: 100px" /> 人
+                    <button class="btn btn-primary btn-sm">許可する</button>
+                </form>
+            {/if}
+            </td>
+        </tr>
+    </table>
+</div>
+</body>
+</html>

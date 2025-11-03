@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    {include file='_gtag.html'}
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex">
+    <title>Result</title>
+
+    {include file='_favicon.html'}
+
+    <link rel="stylesheet" href="../common/styles/reset.css" type="text/css">
+    <link rel="stylesheet" href="./common/styles/layout.css?20240120" type="text/css">
+    <link rel="stylesheet" href="./common/styles/scroll_box.css" type="text/css">
+    <link rel="stylesheet" href="../common/tablesorter/css/theme.default.min.css" type="text/css">
+    <script src="./common/scripts/preview.js"></script>
+    <script src="../common/scripts/jquery-3.6.0.min.js"></script>
+    <script src="../common/tablesorter/js/jquery.tablesorter.min.js"></script>
+    <script type="text/javascript">
+        $(function() {
+            $('#resultClass').change(changeClass);
+            $('#resultTable').tablesorter({
+                headers: {
+{if $resultData}
+{foreach $resultData.quizzes as $quiz}
+                    {$quiz@index + 3}: { sorter:false }{if !$quiz@last},{/if}
+{/foreach}
+{/if}
+                },
+                sortList: [[1,0]], // デフォルトソート
+                emptyTo: 'emptyMax',
+                sortReset: true
+            });
+        });
+
+        function changeClass() {
+            window.location.href = './result.php?lcid=' + $(this).val();
+        }
+    </script>
+</head>
+<body>
+<div id="container">
+    <div id="menuArea">
+        <div id="logoArea">
+            <img src="common/images/logo.png" alt="Test Creator LMS" />
+        </div>
+{include file='_side_menu.html' isJuku=$isJuku current='result'}
+    </div>
+
+    <div id="contentArea">
+        <select id="resultClass">
+            {foreach $schoolGroups as $schoolGroup name='loop'}
+            <option value="{$schoolGroup.lms_code_id}" {if $currentLmsCodeId==$schoolGroup.lms_code_id}selected{/if}>{$schoolGroup.name}</option>
+            {/foreach}
+        </select>
+
+        <div>
+            <a href="result_download_csv.php?lcid={$currentLmsCodeId}" download="result_{$currentSchoolGroup.name}.csv" class="download-btn">CSVダウンロード</a>
+        </div>
+
+        <div class="scroll-box">
+        {if $resultData}
+        <table id="resultTable">
+            <thead>
+            <tr class="tablesorter-ignoreRow">
+                <th class="name _sticky"></th>
+                <th class="student_number _sticky"></th>
+                <th class="login_id _sticky"></th>
+                {foreach $resultData.quizzes as $quiz}
+                {if $quiz.open_date == '1000-01-01 00:00:00'}
+                {assign var=open_date value=""}
+                {else}
+                {assign var=open_date value="`$quiz.open_date`"}
+                {/if}
+                <td>{$open_date|date_format:"%-m月%-d日"}</td>
+                {/foreach}
+            </tr>
+            <tr>
+                <th class="name _sticky">生徒名</th>
+                <th class="_sticky">学籍番号</th>
+                <th class="_sticky">ログインID</th>
+                {foreach $resultData.quizzes as $quiz}
+                <td>{$quiz.title}</td>
+                {/foreach}
+            </tr>
+            </thead>
+            <tbody>
+            {foreach $resultData.studentResults as $studentResults name='loop'}
+            <tr>
+                <th class="name _sticky">{$studentResults.name}</th>
+                <th class="_sticky">{$studentResults.student_number}</th>
+                <th class="_sticky">{$studentResults.login_id}</th>
+                {foreach $resultData.quizzes as $quiz}
+                {assign var=result value=$studentResults.results[$quiz.json_quiz_id]}
+                <td>{if $result===null}<span class="caution">未</span>{else}{$result}/{$quiz.max_score}点{/if}</td>
+                {/foreach}
+            </tr>
+            {/foreach}
+            </tbody>
+        </table>
+        <div id="resultPageControl">
+            <button id="prev" class="normalButton x-small {if $currentResultPage == 1}disabled{/if}" {if $currentResultPage > 1}onclick='location.href="result.php?lcid={$currentLmsCodeId}&resultPage={$currentResultPage - 1}"'{/if}>前へ</button>
+            <button id="next" class="normalButton x-small {if $currentResultPage >= $maxResultPageNumber}disabled{/if}" {if $currentResultPage < $maxResultPageNumber}onclick='location.href="result.php?lcid={$currentLmsCodeId}&resultPage={$currentResultPage + 1}"'{/if}>次へ</button>
+        </div>
+        {else}
+        データがありません。
+        {/if}
+        </div>
+
+        <div id="quizHistory">
+            <h2>テスト生成履歴</h2>
+            <table class="separateTable">
+                <thead>
+                <tr>
+                    <th>
+                        テスト名
+                        <hr />
+                        期間
+                    </th>
+                    <th style="width: 150px">
+                        作成日時
+                    </th>
+                    <th style="width: 280px"></th>
+                </tr>
+                </thead>
+                <tbody>
+                {foreach $records as $record name='loop'}
+                <tr>
+                    <td>
+                        {$record.title}
+                        <hr />
+                        {if empty($record.open_date) && empty($record.expire_date)} -
+                        {else} {if !empty($record.open_date)}{$record.open_date|date_format:"%g-%m-%d %H:%M"}{/if} ～ {$record.expire_date|date_format:"%g-%m-%d %H:%M"}  {/if}
+                    </td>
+                    <td>
+                        {$record.create_date|date_format:"%g-%m-%d %T"}
+                    </td>
+                    <td>
+                        <button class="normalButton x-small {if !$record.is_delivery}blue{/if}" onclick="window.location.href='./quiz_delivery.php?quiz_id={$record.id}'">配信</button>
+                        <button class="normalButton small" onclick="window.location.href='./quiz_result_list.php?quiz_id={$record.id}'">結果一覧</button>
+                        <button class="normalButton x-small" onclick="window.location.href='./quiz_statistics.php?quiz_id={$record.id}'">統計</button>
+                        <button class="normalButton small" onclick="openPreview('{$record.id}')">プレビュー</button>
+                        <button class="normalButton middle" onclick="window.location.href='./quiz_create.php?quiz_id={$record.id}'">範囲修正・再生成</button>
+                    </td>
+                </tr>
+                {/foreach}
+                </tbody>
+            </table>
+
+            <div id="historyPageControl">
+                <button class="prev normalButton x-small {if $currentPage == 1}disabled{/if}" {if $currentPage > 1}onclick='location.href="result.php?page={$currentPage - 1}"'{/if}>前へ</button>
+                <button class="next normalButton x-small {if $currentPage >= $maxPageNumber}disabled{/if}" {if $currentPage < $maxPageNumber}onclick='location.href="result.php?page={$currentPage + 1}"'{/if}>次へ</button>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

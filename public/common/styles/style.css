@@ -1,0 +1,13 @@
+#wrapper_top_border {
+    border-top: solid #d28133 8pt;
+}
+
+#contents {
+    width: 1024px;
+    margin: 0 auto;
+    padding: 10px 0;
+}
+
+a, button {
+    cursor: pointer;
+}

@@ -1,0 +1,109 @@
+set charset utf8mb4;
+
+BEGIN;
+
+ALTER TABLE lms_code ADD COLUMN type TINYINT NOT NULL DEFAULT 1 AFTER lms_code;
+
+
+# LMS チケット
+CREATE TABLE lms_ticket (
+    id BIGINT UNSIGNED AUTO_INCREMENT,
+    school_id BIGINT UNSIGNED NOT NULL DEFAULT 0,   # 学校ID
+    teacher_id BIGINT UNSIGNED NOT NULL DEFAULT 0,  # 先生ID
+    title_no INTEGER UNSIGNED NOT NULL,             # 書籍NO、e-ONIGIRI は 900001
+    expire_year SMALLINT NOT NULL,                  # 期限（年）
+    expire_month TINYINT NOT NULL,                  # 期限（月）
+    status TINYINT NOT NULL DEFAULT 0,              # 0:無効、1:有効、2:先生が削除、3:管理者が削除
+    create_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_date DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB;
+
+CREATE INDEX index_lms_ticket_school_id ON lms_ticket(school_id);
+CREATE INDEX index_lms_ticket_teacher_id ON lms_ticket(teacher_id);
+
+# LMS チケットの申請管理
+CREATE TABLE lms_ticket_application (
+    id BIGINT UNSIGNED AUTO_INCREMENT,
+    lms_ticket_id BIGINT UNSIGNED NOT NULL,  # 親 LMS チケットID
+    quantity INT NOT NULL DEFAULT 0,         # 数量
+    status TINYINT NOT NULL DEFAULT 1,       # 1:購入申請中、2:購入済み、3:先生が取り消し、4:管理者が取り消し
+    type TINYINT NOT NULL DEFAULT 1,         # 1:先生が購入申請、2:管理者が付与
+    create_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_date DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB;
+
+CREATE INDEX index_lms_ticket_application_lms_ticket_id ON lms_ticket_application(lms_ticket_id);
+
+CREATE VIEW lms_ticket_application_view AS 
+  SELECT 
+    lta.id,
+    lta.lms_ticket_id,
+    lt.title_no,
+    lt.school_id,
+    s.name AS school_name,
+    lt.teacher_id,
+    t.name_1 AS teacher_name_1,
+    t.name_2 AS teacher_name_2,
+    lt.expire_year,
+    lt.expire_month,
+    lt.status AS lms_ticket_status,
+    lta.status AS lms_ticket_application_status,
+    lta.type AS lms_ticket_application_type,
+    lta.quantity,
+    lta.create_date,
+    lta.update_date
+  FROM lms_ticket_application AS lta 
+  INNER JOIN lms_ticket AS lt ON lta.lms_ticket_id = lt.id
+  LEFT JOIN teacher AS t ON lt.teacher_id = t.id
+  LEFT JOIN school AS s ON lt.school_id = s.id;
+
+# LMS チケットグループ（生徒が利用するのはこちら）
+CREATE TABLE lms_ticket_group (
+    id BIGINT UNSIGNED AUTO_INCREMENT,
+    lms_ticket_id BIGINT UNSIGNED NOT NULL, # 親 LMS チケットID
+    lms_code_id BIGINT UNSIGNED NOT NULL,   # LMS コードID
+    name TEXT NOT NULL,                     # チケットグループ名
+    quantity INTEGER NOT NULL DEFAULT 0,    # 数量
+    status TINYINT NOT NULL DEFAULT 0,      # 0:無効、1:有効、2:先生が削除
+    create_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_date DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB;
+
+CREATE INDEX index_lms_ticket_group_lms_ticket_id ON lms_ticket_group(lms_ticket_id);
+CREATE INDEX index_lms_ticket_group_lms_code_id ON lms_ticket_group(lms_code_id);
+
+# LMS チケット使用数
+CREATE TABLE lms_ticket_group_use_count (
+    lms_ticket_group_id BIGINT UNSIGNED NOT NULL,   # LMチケットグループID
+    use_count INTEGER NOT NULL DEFAULT 0,           # 使用数
+    create_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_date DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY(lms_ticket_group_id)
+) ENGINE=InnoDB;
+
+CREATE VIEW lms_ticket_group_view AS 
+  SELECT 
+    ltg.id,
+    ltg.lms_ticket_id,
+    lt.title_no,
+    lt.school_id,
+    lt.teacher_id,
+    lt.expire_year,
+    lt.expire_month,
+    ltg.name,
+    ltg.quantity,
+    lt.status AS lms_ticket_status,
+    ltg.status,
+    ltguc.use_count,
+    ltg.lms_code_id,
+    lc.lms_code,
+    ltg.create_date
+  FROM lms_ticket_group AS ltg 
+  INNER JOIN lms_ticket AS lt ON lt.id = ltg.lms_ticket_id
+  INNER JOIN lms_ticket_group_use_count AS ltguc ON ltguc.lms_ticket_group_id = ltg.id
+  INNER JOIN lms_code AS lc ON ltg.lms_code_id = lc.id;
+
+COMMIT;

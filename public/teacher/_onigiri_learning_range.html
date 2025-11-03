@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    {include file='_gtag.html'}
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex">
+    <title>Onigiriの範囲設定 - iizunaLMS</title>
+
+    {include file='_favicon.html'}
+
+    <link rel="stylesheet" href="../common/styles/reset.css" type="text/css">
+    <link rel="stylesheet" href="../common/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../common/styles/style.css" type="text/css">
+    <script src="../common/scripts/jquery-3.6.0.min.js"></script>
+    <script type="text/javascript">
+        $(function() {
+            $('#learningRangeClass').change(changeClass);
+            $('#learningRangeForm').submit(updateLearningRange);
+        });
+
+        function changeClass() {
+            window.location.href = './onigiri_learning_range.php?lcid=' + $(this).val();
+        }
+
+        function updateLearningRange() {
+            let form = $("#learningRangeForm");
+
+            $.ajax({
+                url: 'onigiri_learning_range_register.php',
+                type: 'post',
+                data: form.serialize(),
+                timeout: 30000,
+            })
+            .done(function(result) {
+                if (result.result =='OK')
+                {
+                    alert('更新しました。');
+                    return;
+                } else if (result.error != null)
+                {
+                    $('#errors').html(result.error['message'] + ' (' + result.error['code'] + ')');
+                    return;
+                }
+                else
+                {
+                    alert('エラーが発生しました。');
+                    return;
+                }
+            })
+            .fail(function(result) {
+                alert('エラーが発生しました。');
+                return;
+            });
+
+            return false;
+        }
+    </script>
+</head>
+<body>
+<div id="wrapper_top_border">
+    <div id="contents">
+        <h1>e-ONIGIRI英単語の範囲設定</h1>
+        {if empty($schoolGroups)}
+        <p>有効なe-ONIGIRI英単語用チケットがありません。</p>
+        {else}
+        <form method="post" id="learningRangeForm">
+            <select name="lms_code_id" id="learningRangeClass">
+                {foreach $schoolGroups as $schoolGroup name='loop'}
+                <option value="{$schoolGroup.lms_code_id}" {if $currentLmsCodeId==$schoolGroup.lms_code_id}selected{/if}>{$schoolGroup.name}</option>
+                {/foreach}
+            </select>
+
+            <h2>TOEIC</h2>
+            <table class="table table-striped table-hover table-bordered">
+                <tbody>
+                <tr>
+                    <td>300点以上</td>
+                    <td>
+                        {foreach from=$data['toeic'][300] item=val key=stage}
+                        <input type="checkbox" name="learning_range[]" value="toeic-300-{$stage}" id="toeic-300-{$stage}" {if $val}checked{/if}> <label for="toeic-300-{$stage}">Stage {$stage}</label>　{if $stage % 5 == 0}<br />{/if}
+                        {/foreach}
+                    </td>
+                </tr>
+                <tr>
+                    <td>350点以上</td>
+                    <td>
+                        {foreach from=$data['toeic'][350] item=val key=stage}
+                        <input type="checkbox" name="learning_range[]" value="toeic-350-{$stage}" id="toeic-350-{$stage}" {if $val}checked{/if}> <label for="toeic-350-{$stage}">Stage {$stage}</label>　{if $stage % 5 == 0}<br />{/if}
+                        {/foreach}
+                    </td>
+                </tr>
+                <tr>
+                    <td>470点以上</td>
+                    <td>
+                        {foreach from=$data['toeic'][470] item=val key=stage}
+                        <input type="checkbox" name="learning_range[]" value="toeic-470-{$stage}" id="toeic-470-{$stage}" {if $val}checked{/if}> <label for="toeic-470-{$stage}">Stage {$stage}</label>　{if $stage % 5 == 0}<br />{/if}
+                        {/foreach}
+                    </td>
+                </tr>
+                <tr>
+                    <td>500点以上</td>
+                    <td>
+                        {foreach from=$data['toeic'][500] item=val key=stage}
+                        <input type="checkbox" name="learning_range[]" value="toeic-500-{$stage}" id="toeic-500-{$stage}" {if $val}checked{/if}> <label for="toeic-500-{$stage}">Stage {$stage}</label>　{if $stage % 5 == 0}<br />{/if}
+                        {/foreach}
+                    </td>
+                </tr>
+                <tr>
+                    <td>600点以上</td>
+                    <td>
+                        {foreach from=$data['toeic'][600] item=val key=stage}
+                        <input type="checkbox" name="learning_range[]" value="toeic-600-{$stage}" id="toeic-600-{$stage}" {if $val}checked{/if}> <label for="toeic-600-{$stage}">Stage {$stage}</label>　{if $stage % 5 == 0}<br />{/if}
+                        {/foreach}
+                    </td>
+                </tr>
+                <tr>
+                    <td>730点以上</td>
+                    <td>
+                        {foreach from=$data['toeic'][730] item=val key=stage}
+                        <input type="checkbox" name="learning_range[]" value="toeic-730-{$stage}" id="toeic-730-{$stage}" {if $val}checked{/if}> <label for="toeic-730-{$stage}">Stage {$stage}</label>　{if $stage % 5 == 0}<br />{/if}
+                        {/foreach}
+                    </td>
+                </tr>
+                <tr>
+                    <td>860点以上</td>
+                    <td>
+                        {foreach from=$data['toeic'][860] item=val key=stage}
+                        <input type="checkbox" name="learning_range[]" value="toeic-860-{$stage}" id="toeic-860-{$stage}" {if $val}checked{/if}> <label for="toeic-860-{$stage}">Stage {$stage}</label>　{if $stage % 5 == 0}<br />{/if}
+                        {/foreach}
+                    </td>
+                </tr>
+                <tr>
+                    <td>950点以上</td>
+                    <td>
+                        {foreach from=$data['toeic'][950] item=val key=stage}
+                        <input type="checkbox" name="learning_range[]" value="toeic-950-{$stage}" id="toeic-950-{$stage}" {if $val}checked{/if}> <label for="toeic-950-{$stage}">Stage {$stage}</label>　{if $stage % 5 == 0}<br />{/if}
+                        {/foreach}
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+
+            <h2>英検</h2>
+            <table class="table table-striped table-hover table-bordered">
+                <tbody>
+                <tr>
+                    <td>3級</td>
+                    <td>
+                        {foreach from=$data['english_cert'][5] item=val key=stage}
+                        <input type="checkbox" name="learning_range[]" value="english_cert-5-{$stage}" id="english_cert-5-{$stage}" {if $val}checked{/if}> <label for="english_cert-5-{$stage}">Stage {$stage}</label>　{if $stage % 5 == 0}<br />{/if}
+                        {/foreach}
+                    </td>
+                </tr>
+                <tr>
+                    <td>準2級</td>
+                    <td>
+                        {foreach from=$data['english_cert'][4] item=val key=stage}
+                        <input type="checkbox" name="learning_range[]" value="english_cert-4-{$stage}" id="english_cert-4-{$stage}" {if $val}checked{/if}> <label for="english_cert-4-{$stage}">Stage {$stage}</label>　{if $stage % 5 == 0}<br />{/if}
+                        {/foreach}
+                    </td>
+                </tr>
+                <tr>
+                    <td>2級</td>
+                    <td>
+                        {foreach from=$data['english_cert'][3] item=val key=stage}
+                        <input type="checkbox" name="learning_range[]" value="english_cert-3-{$stage}" id="english_cert-3-{$stage}" {if $val}checked{/if}> <label for="english_cert-3-{$stage}">Stage {$stage}</label>　{if $stage % 5 == 0}<br />{/if}
+                        {/foreach}
+                    </td>
+                </tr>
+                <tr>
+                    <td>準1級</td>
+                    <td>
+                        {foreach from=$data['english_cert'][2] item=val key=stage}
+                        <input type="checkbox" name="learning_range[]" value="english_cert-2-{$stage}" id="english_cert-2-{$stage}" {if $val}checked{/if}> <label for="english_cert-2-{$stage}">Stage {$stage}</label>　{if $stage % 5 == 0}<br />{/if}
+                        {/foreach}　
+                    </td>
+                </tr>
+                <tr>
+                    <td>1級</td>
+                    <td>
+                        {foreach from=$data['english_cert'][1] item=val key=stage}
+                        <input type="checkbox" name="learning_range[]" value="english_cert-1-{$stage}" id="english_cert-1-{$stage}" {if $val}checked{/if}> <label for="english_cert-1-{$stage}">Stage {$stage}</label>　{if $stage % 5 == 0}<br />{/if}
+                        {/foreach}
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+
+            <h2>中学1～3年</h2>
+            <table class="table table-striped table-hover table-bordered">
+                <tbody>
+                <tr>
+                    <td>
+                        {foreach from=$data['junior_high_school'][0] item=val key=stage}
+                        <input type="checkbox" name="learning_range[]" value="junior_high_school-0-{$stage}" id="junior_high_school-0-{$stage}" {if $val}checked{/if}> <label for="junior_high_school-0-{$stage}">Stage {$stage}</label>　{if $stage % 5 == 0}<br />{/if}
+                        {/foreach}
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+
+            <h2>高校1～2年</h2>
+            <table class="table table-striped table-hover table-bordered">
+                <tbody>
+                <tr>
+                    <td>
+                        {foreach from=$data['high_school'][0] item=val key=stage}
+                        <input type="checkbox" name="learning_range[]" value="high_school-0-{$stage}" id="high_school-0-{$stage}" {if $val}checked{/if}> <label for="high_school-0-{$stage}">Stage {$stage}</label>　{if $stage % 5 == 0}<br />{/if}
+                        {/foreach}
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+
+            <h2>大学受験／共通テスト</h2>
+            <table class="table table-striped table-hover table-bordered">
+                <tbody>
+                <tr>
+                    <td>
+                        {foreach from=$data['college_common_test'][0] item=val key=stage}
+                        <input type="checkbox" name="learning_range[]" value="college_common_test-0-{$stage}" id="college_common_test-0-{$stage}" {if $val}checked{/if}> <label for="college_common_test-0-{$stage}">Stage {$stage}</label>　{if $stage % 5 == 0}<br />{/if}
+                        {/foreach}
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+
+            <h2>大学受験／標準私大</h2>
+            <table class="table table-striped table-hover table-bordered">
+                <tbody>
+                <tr>
+                    <td>
+                        {foreach from=$data['college_standard'][0] item=val key=stage}
+                        <input type="checkbox" name="learning_range[]" value="college_standard-0-{$stage}" id="college_standard-0-{$stage}" {if $val}checked{/if}> <label for="college_standard-0-{$stage}">Stage {$stage}</label>　{if $stage % 5 == 0}<br />{/if}
+                        {/foreach}
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+
+            <h2>大学受験／難関私大・国公立</h2>
+            <table class="table table-striped table-hover table-bordered">
+                <tbody>
+                <tr>
+                    <td>
+                        {foreach from=$data['college_elite'][0] item=val key=stage}
+                        <input type="checkbox" name="learning_range[]" value="college_elite-0-{$stage}" id="college_elite-0-{$stage}" {if $val}checked{/if}> <label for="college_elite-0-{$stage}">Stage {$stage}</label>　{if $stage % 5 == 0}<br />{/if}
+                        {/foreach}
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+            <br />
+            <input type="submit" name="submit" value="更新" class="btn btn-primary" />
+            <br />
+            <br />
+        </form>
+        {/if}
+        <input type="button" name="back" value="戻る" class="btn btn-light" onclick="location.href='index.php'" />
+        <br />
+        <br />
+    </div>
+</div>
+</body>
+</html>

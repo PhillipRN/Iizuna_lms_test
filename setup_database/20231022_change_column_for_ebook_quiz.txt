@@ -1,0 +1,8 @@
+set charset utf8mb4;
+
+BEGIN;
+
+ALTER TABLE ebook_quiz DROP COLUMN instruction_id;
+ALTER TABLE ebook_quiz ADD COLUMN instruction TEXT AFTER is_upper_case_judgement;
+
+COMMIT;

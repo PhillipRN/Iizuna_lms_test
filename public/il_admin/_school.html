@@ -1,0 +1,326 @@
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="robots" content="noindex">
+    <title>学校登録画面</title>
+
+    {include file='_favicon.html'}
+
+    <link rel="stylesheet" href="../common/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="./common/style.css" type="text/css">
+    <link rel="stylesheet" href="./common/admin.css?202303121051" type="text/css">
+    <script src="common/scripts/admin.js?202303121051"></script>
+    <script src="../common/scripts/jquery-3.6.0.min.js"></script>
+    {if $isUpdate}
+    <script type="text/javascript">
+        let isUpdate = true;
+    </script>
+    {else}
+    <script type="text/javascript">
+        let isUpdate = false;
+    </script>
+    {/if}
+    <script type="text/javascript">
+        $(function() {
+            $('#registrationForm').submit(registrationSubmit);
+            $('#schoolRegisterCsv').submit(schoolRegisterCsvSubmit);
+        });
+
+        function schoolRegisterCsvSubmit() {
+            $('#schoolRegisterCsvSubmitButton').hide();
+            $('#loading').show();
+        }
+
+        function registrationSubmit() {
+            let form = $('#registrationForm');
+
+            var errors = [];
+
+            if ($('#school_name').val() == '') {
+                errors.push('学校名を入力してください。');
+            }
+
+            if ($('#school_zip').val() == '') {
+                errors.push('学校郵便番号を入力してください。');
+            }
+            else if (checkZipCode($('#school_zip').val()) == false) {
+                errors.push('学校郵便番号を正しく入力してください。');
+            }
+
+            if (errors.length != 0) {
+                $('#errors').html(errors.join('<br>'));
+                $(window).scrollTop($('#errors').position().top);
+            }
+            else {
+                $('#errors').html('');
+
+                $.ajax({
+                    url: 'school_register.php',
+                    type: 'post',
+                    data: form.serialize(),
+                    timeout: 30000,
+                })
+                .done(function(result) {
+                    if (result.error != null)
+                    {
+                        $('#errors').html(result.error['message'] + ' (' + result.error['code'] + ')');
+                        return;
+                    }
+                    else if (result.result == 'OK')
+                    {
+                        alert('登録しました。');
+                        window.location = './school_list.php';
+                        return;
+                    }
+                    else
+                    {
+                        alert('予期せぬエラーが発生しました。');
+                        return;
+                    }
+                })
+                .fail(function(result) {
+                    alert('エラーが発生しました。');
+                    return;
+                });
+            }
+
+            return false;
+        }
+
+        function apploveBook(name, id) {
+            $('#errors_application').html('');
+
+            if (!confirm(name + "\nを承認しますか？")) return;
+
+            $.ajax({
+                url: 'lms_ticket_application_register.php',
+                type: 'post',
+                data: { 'id': id },
+                timeout: 30000,
+            })
+                .done(function(result) {
+                    if (result.error != null)
+                    {
+                        $('#errors_application').html(result.error['message'] + ' (' + result.error['code'] + ')');
+                        return;
+                    }
+                    else if (result.result == 'OK')
+                    {
+                        alert('承認しました。');
+                        location.reload();
+                        return;
+                    }
+                    else
+                    {
+                        alert('予期せぬエラーが発生しました。');
+                        return;
+                    }
+                })
+                .fail(function(result) {
+                    alert('エラーが発生しました。');
+                    return;
+                });
+        }
+
+        function canselApplication(name, id) {
+            if (!confirm(name + "\nの申請を取り消します。\nよろしいですか？")) return false;
+
+            $('#errors_application').html('');
+
+            $.ajax({
+                url: 'lms_ticket_application_canceler.php',
+                type: 'post',
+                data: { ltaid: id },
+                timeout: 30000,
+            })
+                .done(function(result) {
+                    if (result.error != null)
+                    {
+                        $('#errors_application').html(result.error['message'] + ' (' + result.error['code'] + ')');
+                        return;
+                    }
+                    else
+                    {
+                        alert('取り消しました。');
+                        location.reload();
+                        return;
+                    }
+                })
+                .fail(function(result) {
+                    alert('エラーが発生しました。');
+                    return;
+                });
+
+            return false;
+        }
+    </script>
+</head>
+<body>
+
+
+<p style="margin: 10px;"><a href="{if $isUpdate}school_list.php{else}index.php{/if}">戻る</a></p>
+<hr />
+<div id="contents">
+    <h1>学校{if $isUpdate}更新{else}登録{/if}画面</h1>
+
+    {if !$isUpdate}
+    <h2>CSVで一括登録</h2>
+    <form method="post" action="school_register_csv.php" enctype="multipart/form-data" id="schoolRegisterCsv">
+        <input type="file" name="csvfile" size="30" />
+        <input type="submit" name="submit" value="一括登録" id="schoolRegisterCsvSubmitButton" />
+        <img src="../common/images/loading.gif" style="display: none" id="loading" />
+    </form>
+    <hr />
+    {/if}
+
+    <div id="errors" class="text-danger error"></div>
+    <form method="post" id="registrationForm">
+        <table class="admin_list">
+            <tr>
+                <th scope="row" style="width: 200px">学校コード</th>
+                <td>
+                    {if $isUpdate}
+                    {$school.lms_code}
+                    <input type="hidden" name="id" value="{$school.id}" />
+                    {else}
+                    学校コードは自動で生成されます。
+                    {/if}
+                </td>
+            </tr>
+            <tr>
+                <th>学校名 <span class="required">(必須)</span></th>
+                <td><input type="text" name="school_name" value="{if isset($school.school_name)}{$school.school_name}{/if}" id="school_name" /></td>
+            </tr>
+            <tr>
+                <th>都道府県</th>
+                <td><input type="text" name="school_pref" value="{if isset($school.school_pref)}{$school.school_pref}{/if}" /></td>
+            </tr>
+            <tr>
+                <th>学校郵便番号 <span class="required">(必須)</span><br />
+                    <span class="caption">例：0000000(半角)</span></th>
+                <td><input type="text" name="school_zip" value="{if isset($school.school_zip)}{$school.school_zip}{/if}" id="school_zip" /></td>
+            </tr>
+            <tr>
+                <th>学校住所</th>
+                <td><input type="text" name="school_address" value="{if isset($school.school_address)}{$school.school_address}{/if}" /></td>
+            </tr>
+            <tr>
+                <th>学校電話番号</th>
+                <td><input type="text" name="school_phone" value="{if isset($school.school_phone)}{$school.school_phone}{/if}" /></td>
+            </tr>
+            <tr>
+                <th>有料/無料</th>
+                <td>
+                    <input type="radio" name="is_paid" value="0" id="is_paid_0" {if isset($school.is_paid) && $school.is_paid == 0} checked{/if} /><label for="is_paid_0"> 無料</label> / <input type="radio" name="is_paid" value="1" id="is_paid_1" {if isset($school.is_paid) && $school.is_paid == 1} checked{/if} /><label for="is_paid_1"> 有料</label>
+                </td>
+            </tr>
+            <tr>
+                <th>塾フラグ</th>
+                <td>
+                    <input type="checkbox" name="is_juku" value="1" id="is_juku" {if isset($school.is_juku) && $school.is_juku == 1} checked{/if} /><label for="is_juku"> 塾の場合はチェック</label>
+                </td>
+            </tr>
+        </table>
+        <input type="submit" class="bb" style="margin-top:20px;" name="submit" value="{if $isUpdate}更新{else}登録{/if}" />
+    </form>
+
+{if $isUpdate}
+    <div style="margin:25px 0 15px;">
+        <button type="button" class="btn btn-outline-primary btn-sm" onclick="location.href='lms_ticket_grant.php?school_id={$school.id}'">この学校にチケットを付与</button>
+    </div>
+
+    <h2 style="margin-top: 50px">この学校に付与したLMSチケット一覧</h2>
+    {if !empty($ticketGroupRecords)}
+    <table class="table table-striped table-hover table-bordered">
+        <thead>
+        <tr>
+            <th scope="col">付与日時</th>
+            <th scope="col">種別</th>
+            <th scope="col">有効期限</th>
+            <th scope="col">消費 / 発行</th>
+            <th scope="col">コード</th>
+        </tr>
+        </thead>
+        <tbody>
+        {foreach $ticketGroupRecords as $record name='loop'}
+        {assign var=bookName value=$ticketTypes[$record.title_no]['name']}
+        <tr>
+            <th scope="row">{$record.create_date|date_format:"%Y-%m-%d %T"}</th>
+            <td>{$bookName}</td>
+            <td>{$record.expire_year}年{$record.expire_month}月</td>
+            <td>{$record.use_count}　/{$record.quantity}</td>
+            <td>{$record.lms_code}</td>
+        </tr>
+        {/foreach}
+        </tbody>
+    </table>
+    {else}
+    データがありません。
+    {/if}
+
+    <h2 style="margin-top: 50px">この学校のLMSチケット購入申請管理</h2>
+    <div id="errors_application" class="text-danger error"></div>
+    {if !empty($ticketRecords)}
+    <table class="table table-striped table-hover table-bordered">
+        <thead>
+        <tr>
+            <th scope="col">申請日時</th>
+            <th scope="col">学校/氏名</th>
+            <th scope="col">種別</th>
+            <th scope="col">有効期限</th>
+            <th scope="col">購入申請人数</th>
+            <th scope="col">ステータス</th>
+            <th scope="col">操作</th>
+        </tr>
+        </thead>
+        <tbody>
+        {foreach $ticketRecords as $record name='loop'}
+        {assign var=bookName value=$ticketTypes[$record.title_no]['name']}
+        <tr>
+            <th scope="row">{$record.create_date|date_format:"%Y-%m-%d %T"}</th>
+            <td>{$record.school_name}
+                {if !empty($record.teacher_name_1)}
+                <br />
+                {$record.teacher_name_1} {$record.teacher_name_2}
+                {/if}
+            </td>
+            <td>{$bookName}</td>
+            <td>{$record.expire_year}年{$record.expire_month}月</td>
+            <td>{$record.quantity}</td>
+            <td style="text-align: center"{if $record.lms_ticket_application_status==2} class="bg-success text-white"{/if}>
+            {if $record.lms_ticket_application_type == 2}
+            {if $record.teacher_id == 0}
+            管理者が学校に付与
+            {else}
+            管理者が先生に付与
+            {/if}
+            {else}
+            {if $record.lms_ticket_application_status == 1}
+            申請中
+            {else if $record.lms_ticket_application_status == 2}
+            承認済
+            {/if}
+            {/if}
+            </td>
+            <td>
+                {if $record.lms_ticket_application_status==1}
+                <div style="margin-bottom: 10px">
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="apploveBook('{$bookName}', '{$record.id}')">承認</button>
+                </div>
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="canselApplication('{$bookName}', '{$record.id}')">取り消し</button>
+                {/if}
+            </td>
+        </tr>
+        {/foreach}
+        </tbody>
+    </table>
+    {else}
+    データがありません。
+    {/if}
+
+    <hr />
+    ※削除機能はありません。
+{/if}
+</div>
+</body>
+</html>

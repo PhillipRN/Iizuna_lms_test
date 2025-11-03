@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    {include file='_gtag.html'}
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex">
+    <title>LMSチケット</title>
+
+    {include file='_favicon.html'}
+
+    <link rel="stylesheet" href="../common/styles/reset.css" type="text/css">
+    <link rel="stylesheet" href="./common/styles/layout.css?20240120" type="text/css">
+    <link rel="stylesheet" href="./common/styles/lms_ticket.css" type="text/css">
+    <script src="../common/scripts/jquery-3.6.0.min.js"></script>
+    <script src="../common/scripts/common.js"></script>
+    <script src="../common/scripts/validation.js"></script>
+
+    <script type="text/javascript">
+        $(function() {
+            $('#groupRegistrationForm').submit(registrationSubmit);
+            $('#deleteButton').click(deleteRecord);
+        });
+
+        function registrationSubmit() {
+            let form = $('#groupRegistrationForm');
+
+            let quantity = $('#quantity').val();
+
+            if (!isPositiveInteger(quantity)) {
+                $('#errors').html('発行数を正しく入力してください。');
+                return false;
+            }
+
+            $('#errors').html('');
+
+            $.ajax({
+                url: 'lms_ticket_group_register.php',
+                type: 'post',
+                data: form.serialize(),
+                timeout: 30000,
+            })
+            .done(function(result) {
+                if (result.error != null)
+                {
+                    $('#errors').html(result.error['message']);
+                    return false;
+                }
+                else if (result.result == 'OK')
+                {
+                    alert('更新しました。');
+                    location.href = './lms_ticket_group.php?ltid={$record.lms_ticket_id}';
+                    return false;
+                }
+                else
+                {
+                    alert('エラーが発生しました。');
+                    return false;
+                }
+            })
+            .fail(function(result) {
+                alert('エラーが発生しました。');
+                return false;
+            });
+
+            return false;
+        }
+
+        function deleteRecord() {
+            if (confirm("本当にこのLMSチケットグループを削除しますか？\n※削除されたLMSチケットグループは元に戻すことはできません。") == false)
+            {
+                return false;
+            }
+
+            let id = $(this).data('id');
+
+            $.ajax({
+                url: 'lms_ticket_group_delete.php',
+                type: 'post',
+                data: {
+                    '_csrf': '{$csrf}',
+                    'ltgid': id
+                },
+                timeout: 30000,
+            })
+            .done(function(result) {
+                if (result.error != null)
+                {
+                    $('#errors').html(result.error['message']);
+                    return false;
+                }
+                else
+                {
+                    alert('削除しました。');
+                    location.href = './lms_ticket_group.php?ltid={$record.lms_ticket_id}';
+                    return false;
+                }
+            })
+            .fail(function(result) {
+                alert('エラーが発生しました。');
+                return false;
+            });
+
+            return false;
+        }
+    </script>
+</head>
+<body>
+<div id="container">
+    <div id="menuArea">
+        <div id="logoArea">
+            <img src="common/images/logo.png" alt="Test Creator LMS" />
+        </div>
+{include file='_side_menu.html' isJuku=$isJuku current='lms_ticket'}
+    </div>
+
+    <div id="contentArea">
+        <h2>LMSチケットグループ操作</h2>
+
+        <form method="post" id="groupRegistrationForm">
+            <input type="hidden" name="_csrf" value="{$csrf}" />
+            <input type="hidden" name="ltgid" value="{$record.id}" />
+            <table class="separateTable">
+                <tr>
+                    <th>チケットグループ名</th>
+                    <td><input type="text" name="name" value="{$record.name}" /></td>
+                </tr>
+                <tr>
+                    <th>消費 / 発行</th>
+                    <td>{$record.use_count} / <input type="text" name="quantity" value="{$record.quantity}" id="quantity" style="width: 100px" onchange="zen2han(this)" /></td>
+                </tr>
+                <tr>
+                    <th>コード</th>
+                    <td>{$record.lms_code}</td>
+                </tr>
+            </table>
+            <div id="errors" class="caution"></div>
+
+            <div class="buttonArea">
+                <input type="submit" value="更新" class="normalButton" />
+            </div>
+        </form>
+
+        <div style="margin-top: 20px">
+            <h2>削除</h2>
+            <div class="buttonArea">
+{if $record.use_count > 0}
+                <button class="normalButton small disabled">削除</button>
+{else}
+                <button class="normalButton small delete" id="deleteButton" data-id="{$record.id}">削除</button>
+{/if}
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

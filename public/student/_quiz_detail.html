@@ -1,0 +1,441 @@
+<!doctype html>
+<html>
+<head>
+    {include file='_gtag.html'}
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex">
+    <title>成績</title>
+
+    {include file='_favicon.html'}
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- link -->
+    <link rel="stylesheet" href="../common/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="common/style/test.css?250417">
+    <link href="https://fonts.googleapis.com/css?family=Cormorant+Garamond:400,400i,500,500i,600,600i,700,700i" rel="stylesheet">
+
+    <!-- scripts -->
+    <script src="../common/scripts/jquery-3.6.0.min.js"></script>
+    <script src="common/script/chart.min.js"></script>
+    <script src="common/script/common.js?250331"></script>
+    <script src="../common/bootstrap/js/bootstrap.min.js"></script>
+    <script src="common/script/bootbox.all.min.js"></script>
+    <script src="common/script/quiz_submission_recovery.js"></script>
+    <script>
+    //メモ：成績を入れる(半角数字)
+
+    var json = {
+        total:{$total},
+        list:
+        [
+{foreach $results as $result name='loop'}
+            [{$result.score},{($result.score / $total * 100)|floor},'{$result.create_date|date_format:"%Y/%m/%d %T"}',{$result.id}],
+{/foreach}
+        ]
+    }
+    Array.prototype.max=function(y){
+    return Math.max.apply(null,this.map(function(z){ return z[y] }))
+    }
+    const grades_point = (json["list"].length > 0) ? json["list"].max(0) : 0;
+    const grades_total_point = json["total"];
+    const grades_percent = (json["list"].length > 0) ? json["list"].max(1) : 0;
+    let myChart2;
+
+
+
+    function list_creator(src,max,total){
+        var sum = 0;
+        for (var i = 0,len = src.length; i < len; i++) {
+            sum += src[i][0];
+        }
+        $("#past ul li:eq(0) span").html(src.length);
+
+        if (src.length != 0)
+        {
+            $("#past ul li:eq(2) span").html(Math.round(sum / src.length * 10)/10);
+        }
+
+        for (var i = 0,len = src.length; i < len; i++) {
+            sum += src[i][1];
+        }
+
+        if (src.length != 0)
+        {
+            $("#past ul li:eq(4) span").html(Math.round(sum / src.length * 10)/10);
+        }
+
+        let isMinWidth500 = ($(window).width() >= 500);
+
+        for (var i = 0,len = src.length; i < len; i++) {
+            $(".border_box_inner:eq("+i+") .border_set .no").html(src[i][0]);
+
+            if (isMinWidth500) {
+                $(".border_box_inner:eq(" + i + ") .border_set .border").css({ "height": "calc(30vw * " + src[i][0] / total * 190 + " / 750)" });
+            }
+            else {
+                $(".border_box_inner:eq(" + i + ") .border_set .border").css({ "height": "calc(100vw * " + src[i][0] / total * 190 + " / 750)" });
+            }
+
+            if(src[i][0] == max ){
+                $(".border_box_inner:eq("+i+") .border_set .crown").addClass("crown_visible");
+            }
+        }
+
+    }
+
+    var gradesRemaining = 100 - grades_percent;
+    $(window).ready(function(){
+        // 未送信の回答データがあるか確認して自動送信
+        checkPendingSubmissions();
+        
+        var ctx = $("#Chart1");
+        var ctx2 = $("#Chart3");
+        list_creator(json["list"],grades_point,grades_total_point);
+        $('.border_box_outer').addClass('clickable')
+            .click(function(e) {
+                var index=$('.border_box_outer').index($(this));   
+                var date = new Date(json["list"][index][2]);
+                var minutes= date.getMinutes();
+                if(date.getMinutes()<10){
+                    minutes = "0"+minutes;
+                }
+                $('.border_box_outer').removeClass('border_box_outer_select');
+                $(this).addClass('border_box_outer_select');
+                $('#grades_detail_list_detail_index #no').html(index+1+"回目");
+                $('#grades_detail_list_detail_point').html(json["list"][index][0]);
+                $('#grades_detail_list_detail_index #time').html(date.getFullYear()+"年"+(date.getMonth()+1)+"月"+date.getDate()+"日 "+date.getHours()+":"+minutes);
+                $('#grades_detail_list_detail_percent').html(json["list"][index][1]);
+                $('#grades_detail_list_detail_point_text,#rate_of_up').html("");
+                $('#rate_of_up').removeClass("stay_color");
+                $('#comparison p:eq(0)').removeClass("comparison_0").removeClass("comparison_up").removeClass("comparison_stay").removeClass("comparison_down");
+
+                // 間違えた問題を確認するためのIDセット
+                $('#check_btn').data('result-id', json["list"][index][3]);
+
+                if(index != 0){
+                     var rate = json["list"][index][0] - json["list"][index -1 ][0];
+                     if(rate > 0){
+                        $('#rate_of_up').html(rate + "点UP");
+                        $('#comparison p:eq(0)').addClass("comparison_up");
+
+                     }else if(rate < 0){
+                        $('#rate_of_up').html((rate * -1)  + "点DOWN").addClass("stay_color");
+                        $('#comparison p:eq(0)').addClass("comparison_down");
+                     }else{
+                        $('#rate_of_up').html("STAY").addClass("stay_color");
+                        $('#comparison p:eq(0)').addClass("comparison_stay");
+                     }
+                }else{
+                        $('#comparison p:eq(0)').addClass("comparison_0");
+                }
+                if(json["list"][index][0] == grades_point ){
+                    $('#grades_detail_list_detail_point_text').html("自己ベスト");  
+                }
+                myChart2.destroy();
+                myChart2 = new Chart(ctx2, {
+                    type: 'doughnut',
+                    data: {
+                        datasets: [{
+                            data: [json["list"][index][1],100-json["list"][index][1]],
+                            backgroundColor: [
+                                '#ffcc01',
+                                '#6f98ce'
+                            ],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+
+                        cutout: "10%",
+                        legend: { display: false },
+                        responsive: true,
+                        plugins:{
+                            tooltip: {
+                                enabled: false,
+                                backgroundColor: '#ffcc01'
+                            }
+                        }
+                    }
+                });
+            });
+            
+        $("#grades_point").html(grades_point);
+        $("#grades_total_point").html(grades_total_point);
+        gradesTopTimer($("#grades_percent"),grades_percent);
+
+
+        var data = [grades_percent,gradesRemaining];
+        var myChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            datasets: [{
+                data: data,
+                backgroundColor: [
+                '#ffcc01',
+                    '#6f98ce'
+                ],
+                borderWidth: 0
+            }]
+        },
+        options: {
+
+            cutout: "10%",
+            legend: { display: false },
+            responsive: true,
+            plugins:{
+                tooltip: { 
+                    enabled: false,
+                    backgroundColor: '#ffcc01'
+                    }
+            }
+        }
+        });
+
+        if (json["list"].length > 0) {
+            var data = [json["list"][0][1], 100 - json["list"][0][1]];
+            var date = new Date(json["list"][0][2]);
+            var minutes = date.getMinutes();
+            if (date.getMinutes() < 10) {
+                minutes = "0" + minutes;
+            }
+            $('#grades_detail_list_detail_index #no').html(1 + "回目");
+            $('#grades_detail_list_detail_point').html(json["list"][0][0]);
+            $('#grades_detail_list_detail_index #time').html(date.getFullYear() + "年" + (date.getMonth() + 1) + "月" + date.getDate() + "日 " + date.getHours() + ":" + minutes);
+            $('#grades_detail_list_detail_percent').html(json["list"][0][1]);
+            $('#grades_detail_list_detail_point_text').html("");
+            if (json["list"][0][0] == grades_point) {
+                $('#grades_detail_list_detail_point_text').html("自己ベスト");
+            }
+            myChart2 = new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    datasets: [{
+                        data: data,
+                        backgroundColor: [
+                            '#ffcc01',
+                            '#6f98ce'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+
+                    cutout: "10%",
+                    legend: { display: false },
+                    responsive: true,
+                    plugins: {
+                        tooltip: {
+                            enabled: false,
+                            backgroundColor: '#ffcc01'
+                        }
+                    }
+                }
+            });
+
+            // 間違えた問題を確認する
+            $('#check_btn').click(function () {
+                var resultId = $(this).data('result-id');
+                
+                // 結果IDの存在確認
+                $.ajax({
+                    url: "check_result_exists.php",
+                    type: "get",
+                    data: { id: resultId },
+                    dataType: "json",
+                    timeout: 10000,
+                })
+                .done(function(response) {
+                    if (response.exists) {
+                        window.location.href = 'quiz_result.php?id=' + resultId;
+                    } else {
+                        bootbox.alert({
+                            centerVertical: true,
+                            message: "この結果データは見つかりませんでした。再度テストに挑戦してください。"
+                        });
+                    }
+                })
+                .fail(function() {
+                    // エラー時は直接リダイレクト（quiz_result.phpでエラーハンドリングされる）
+                    window.location.href = 'quiz_result.php?id=' + resultId;
+                });
+            });
+        }
+
+    }).resize();
+
+    function retryTest(quizId, expireDate, timeLimit) {
+        let dialogMessage = GetDialogMessage(expireDate, timeLimit)
+
+        bootbox.confirm({
+            centerVertical: true,
+            closeButton: false,
+            message: dialogMessage,
+            callback: function (result) {
+                if (result) {
+                    window.location.href = 'quiz.php?quiz_id=' + quizId
+                }
+            }
+        });
+    }
+    
+    </script>
+</head>
+
+<body>
+    <header>
+        <article id="header_title">
+            <h1>成績</h1>
+        </article>
+{*
+        <article id="menu">
+            <div id="humberger">
+                <div></div>
+                <div></div>
+                <div></div>
+            </div>
+        </article>
+*}
+        <article id="back">
+            <div id="back_link">
+                <a href="./">トップ</a>
+            </div>
+        </article>
+    </header>
+    <main>
+        <section class="s_35">
+            <article class="marign_38">
+                <!--メモ 学年クラス番号氏名を入れる-->
+                <p id="class_name" class="t1 center">{$title}</p>
+            </article>
+                <article id="grades_detail_circle">
+                    <div id="Chart1_bg">
+                    </div>
+                    <div>
+                        <canvas id="Chart1"></canvas>
+                    </div>
+                    <div id="Chart2">
+                        <p>
+                            自己最高点<br>
+                            <span class="grades_point"><span id="grades_point" >0</span>点</span>/<span id="grades_total_point">0</span>点<br>
+                            正答率<br>
+                            <span class="grades_point"><span id="grades_percent" >0</span>%</span>
+
+                        </p>
+                    </div>
+                </article>
+                <article id="grades_detail_right">
+                    <div id="test_btn">
+                        <div id="test_btn_retry" onclick="retryTest('{$quiz_id}', {$expireDateTimeStamp}, {$timeLimit})">再チャレンジ</div>
+                        <div id="test_btn_mistake" onclick="location.href='quiz_liable_to_make_mistakes.php?quiz_id={$quiz_id}'">間違えやすい問題</div>
+
+                    </div>
+                    <div id="test_others">
+                        <p id="test_others_index">みんなの結果</p>
+                        <table>
+                            <tr>
+                                 <td>
+                                    平均点<br>
+                                    <span>{$summary.average}</span>
+                                 </td>
+                                 <th>
+                                    最高点<br>
+                                    <span>{$summary.highest_score}</span>
+                                 </th>
+                                 <td>
+                                    最低点<br>
+                                    <span>{$summary.lowest_score}</span>
+                                 </td>
+                            </tr>
+                        </table>
+                    </div>
+                </article>
+        </section>
+        <section id="past" class="s_35 margin__28">
+            <p class="bold">過去の結果</p>
+            <ul>
+                <li>
+                    チャレンジ回数<span>0</span>
+                </li>
+                <li></li>
+                <li>
+                    平均点<span>0</span>
+                </li>
+                <li></li>
+                <li>
+                    平均正答率<span>0%</span>
+                </li>
+            </ul>
+        </section>
+        <section class="s_20 radius_box p_20">
+            {if !empty($results)}
+            <article id="grades_detail_list">
+                <div class="grades_detail_list_box">
+{foreach $results as $result name='loop'}
+                    <div class="border_box_outer{if $smarty.foreach.loop.iteration == 1} border_box_outer_select{/if}">
+                        <div class="border_box_inner">
+                            <div class="border_set">
+                                <div class="crown"></div>
+                                <p class="no">0</p>
+                                <div class="border"></div>
+                            </div>
+                        </div>
+                        <p class="border_box_inner_times" >
+                            {$smarty.foreach.loop.iteration}回
+                        </p>
+                        <p class="border_box_inner_triangle" >
+                        </p>
+                    </div>
+{/foreach}
+                </div>
+            </article>
+            <article id="grades_detail_list_detail" class="radius_box">
+                <p id="grades_detail_list_detail_index"><span id="no"></span> 受験日 <span id="time"></span></p>
+                <table>
+                    <tr>
+                        <td>
+                            <p class="grades_detail_list_detail_table_text">得点</p>
+                            <div class="grades_detail_list_detail_table_box">
+                                <p><span id="grades_detail_list_detail_point">0</span>点</p>
+                                <p class="grades_detail_list_detail_table_text2" id="grades_detail_list_detail_point_text"></p>
+                            </div>
+                        </td>
+                        <th>
+                            <p class="grades_detail_list_detail_table_text">正答率</p>
+                            <div class="grades_detail_list_detail_table_box">
+                                <article id="grades_detail_list_detail_circle">
+                                    <div id="Chart3_bg">
+                                    </div>
+                                    <div>
+                                        <canvas id="Chart3"></canvas>
+                                    </div>
+                                    <div id="Chart4">
+                                        <p>
+                                            <span id="grades_detail_list_detail_percent" >0</span>%</span>
+                                        </p>
+                                    </div>
+                                </article>
+                            </div>
+                        </th>
+                        <td>
+                            <p class="grades_detail_list_detail_table_text">前回との比較</p>
+                            <div id="comparison" class="grades_detail_list_detail_table_box">
+                                <p class="comparison_0 comparison_image"></p>
+                                <p class="grades_detail_list_detail_table_text2" id="rate_of_up"></p>
+                            </div>
+                        </td>
+
+                    </tr>
+                </table>
+                <p id="check_btn" data-result-id="{$results[0].id}">
+                    間違えた問題を確認する
+                </p>
+            </article>
+            {else}
+            <article>
+                <p>記録がありません。</p>
+            </article>
+            {/if}
+        </section>
+    </main>
+</body>
+</html>

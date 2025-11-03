@@ -1,0 +1,105 @@
+/*font*/
+@font-face {
+    font-family: 'MyFont';
+    src: url(../fonts/Myfont-Regular.ttf?2);
+}
+
+/*all*/
+
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-weight: 500;
+    font-size: max(calc(100vw * 26 / 750 ), 16px);
+    font-family: "游ゴシック体", YuGothic, "游ゴシック", "Yu Gothic", "メイリオ", "Hiragino Kaku Gothic ProN", "Hiragino Sans", sans-serif;
+}
+
+
+
+p {
+    margin-bottom: 0;
+}
+
+html,body{
+    background-color: #eef2f5;
+    color: #676767;
+    overflow-x: hidden;
+    height: 100%;
+    text-align: center;
+}
+
+
+.webForm {
+    width: 85%;
+    margin: 0 auto 25px;
+    background-color: #fff;
+    padding: 15px;
+    border-radius: 15px;
+}
+
+.webForm table {
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.webForm th,
+.webForm td {
+    height: 50px;
+    vertical-align: middle;
+}
+
+.webForm th {
+    width: 45%;
+    font-size: 0.9em;
+}
+
+.webForm.confirm td {
+    border-bottom: 1px solid #aaa;
+}
+
+.webForm input[type=text],
+.webForm input[type=password] {
+    border-radius: 5px;
+    border: 1px solid #aaa;
+    width: 100%;
+    height: 40px;
+    padding: 10px;
+}
+
+.caution {
+    color: #d00;
+}
+
+.profile_lms_codes {
+    width: 85%;
+    margin: 0 auto 25px;
+    background-color: #fff;
+    padding: 15px;
+    border-radius: 15px;
+}
+
+.profile_lms_codes table {
+    width: 100%;
+}
+
+.profile_lms_codes th,
+.profile_lms_codes td {
+    height: 50px;
+    vertical-align: middle;
+}
+
+.profile_lms_codes th {
+    width: 45%;
+    font-size: 0.9em;
+}
+
+@media screen and (min-width: 500px) {
+	body {
+		width: 500px;
+		margin: 10px auto;
+	}
+	* {
+		font-size: 20px;
+	}
+}

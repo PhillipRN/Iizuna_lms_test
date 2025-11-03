@@ -1,0 +1,24 @@
+set charset utf8mb4;
+
+BEGIN;
+
+ALTER TABLE json_quiz ADD time_limit SMALLINT UNSIGNED NOT NULL DEFAULT 0 AFTER expire_date;
+
+
+DROP INDEX index_json_quiz_result_high_score_json_quiz_id ON json_quiz_result_high_score;
+DROP INDEX index_json_quiz_result_high_score_student_id ON json_quiz_result_high_score;
+
+RENAME TABLE json_quiz_result_high_score TO json_quiz_result_score;
+
+ALTER TABLE json_quiz_result_score CHANGE high_score score INTEGER UNSIGNED NOT NULL;
+
+CREATE INDEX index_json_quiz_result_score_json_quiz_id ON json_quiz_result_score(json_quiz_id);
+CREATE INDEX index_json_quiz_result_score_student_id ON json_quiz_result_score(student_id);
+
+ALTER TABLE json_quiz_result ADD COLUMN is_first_result TINYINT UNSIGNED NOT NULL DEFAULT 0 AFTER score;
+
+# すでにある解答データにフラグを立てる
+UPDATE json_quiz_result SET is_first_result = 1 WHERE id IN (SELECT id FROM (SELECT id, student_id, ROW_NUMBER() OVER (PARTITION BY student_id ORDER BY create_date) AS line FROM json_quiz_result) r WHERE line = 1);
+
+
+COMMIT;

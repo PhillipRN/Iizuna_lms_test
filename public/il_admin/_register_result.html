@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <meta name="robots" content="noindex">
+    <title>管理画面</title>
+
+    {include file='_favicon.html'}
+
+    <link rel="stylesheet" href="./common/style.css?202104082200" type="text/css">
+    <link rel="stylesheet" href="./common/admin.css?202104082200" type="text/css">
+    <script src="common/scripts/admin.js"></script>
+</head>
+<body>
+<p style="margin: 10px;"><a href="index.php">戻る</a></p>
+<hr />
+<div id="contents">
+    <h1>先生登録結果</h1>
+    <ul>
+    {foreach $statuses as $status name='loop'}
+        <li>{$status}</li>
+    {/foreach}
+    </ul>
+    <div>
+        <a href="teacher_list.php">先生一覧へ</a>
+    </div>
+</div>
+</body>
+</html>

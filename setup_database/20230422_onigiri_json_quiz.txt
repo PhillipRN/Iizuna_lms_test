@@ -1,0 +1,71 @@
+set charset utf8mb4;
+
+BEGIN;
+
+CREATE TABLE onigiri_json_quiz (
+    id BIGINT UNSIGNED AUTO_INCREMENT,
+    teacher_id BIGINT UNSIGNED NOT NULL,
+    range_lms_code_id BIGINT UNSIGNED DEFAULT 0,
+    range_stage INTEGER UNSIGNED DEFAULT 0,
+    total SMALLINT UNSIGNED NOT NULL,
+    title TEXT NOT NULL,
+    type TEXT,
+    json MEDIUMTEXT NOT NULL,
+    calc_correct_answer_rate SMALLINT NOT NULL DEFAULT 0,
+    open_date DATETIME NOT NULL,
+    expire_date DATETIME NOT NULL,
+    time_limit SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    is_manual_mode TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    create_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_date DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB;
+
+CREATE INDEX index_onigiri_json_quiz_teacher_id ON onigiri_json_quiz(teacher_id);
+
+
+CREATE TABLE onigiri_json_quiz_delivery (
+    onigiri_json_quiz_id BIGINT UNSIGNED NOT NULL,
+    lms_code_id BIGINT UNSIGNED NOT NULL,
+    notice_id TEXT,
+    create_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(onigiri_json_quiz_id, lms_code_id)
+) ENGINE=InnoDB;
+
+CREATE INDEX index_onigiri_json_quiz_delivery_json_quiz_id ON onigiri_json_quiz_delivery(onigiri_json_quiz_id);
+
+
+CREATE TABLE onigiri_json_quiz_result (
+    id BIGINT UNSIGNED AUTO_INCREMENT,
+    onigiri_json_quiz_id BIGINT UNSIGNED NOT NULL,
+    student_id BIGINT UNSIGNED NOT NULL,
+    answers_json MEDIUMTEXT NOT NULL,
+    score INTEGER UNSIGNED NOT NULL,
+    is_first_result TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    create_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_date DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB;
+
+CREATE INDEX index_onigiri_json_quiz_result_json_quiz_id ON onigiri_json_quiz_result(onigiri_json_quiz_id);
+CREATE INDEX index_onigiri_json_quiz_result_student_id ON onigiri_json_quiz_result(student_id);
+
+DROP VIEW teacher_school_view;
+CREATE VIEW teacher_school_view AS SELECT t.*, s.name AS school_name, s.zip AS school_zip, s.pref AS school_pref, s.address AS school_address, s.phone AS school_phone, s.is_paid, s.is_juku, lc.lms_code FROM teacher AS t INNER JOIN school AS s ON t.school_id = s.id INNER JOIN lms_code AS lc ON s.lms_code_id = lc.id;
+
+
+CREATE TABLE onigiri_json_quiz_result_statistics (
+    id BIGINT UNSIGNED AUTO_INCREMENT,
+    onigiri_json_quiz_id BIGINT UNSIGNED NOT NULL,
+    answer_rates_json TEXT NOT NULL,
+    create_date DATETIME,
+    update_date DATETIME,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB;
+
+CREATE INDEX index_onigiri_json_quiz_result_statistics_onigiri_json_quiz_id ON onigiri_json_quiz_result_statistics(onigiri_json_quiz_id);
+
+
+CREATE VIEW json_quiz_combined_view AS SELECT id AS json_quiz_id, 0 AS onigiri_json_quiz_id, teacher_id, title, language_type, json, max_score, open_date, expire_date, time_limit, create_date FROM json_quiz UNION SELECT 0 AS json_quiz_id, id AS onigiri_json_quiz_id, teacher_id, title, 99 AS language_type, json, total AS max_score, open_date, expire_date, time_limit, create_date FROM onigiri_json_quiz;
+
+COMMIT;

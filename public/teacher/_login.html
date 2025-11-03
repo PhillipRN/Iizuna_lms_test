@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    {include file='_gtag.html'}
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex">
+    <title>ログイン</title>
+
+    {include file='_favicon.html'}
+
+    <link rel="stylesheet" href="../common/styles/reset.css" type="text/css">
+    <link rel="stylesheet" href="./common/styles/layout.css?20240120" type="text/css">
+    <script src="../common/scripts/jquery-3.6.0.min.js"></script>
+    <script type="text/javascript">
+        $(function() {
+            $('#loginForm').submit(loginSubmit);
+        });
+
+        function loginSubmit(event) {
+            var errors = [];
+
+            if ($('#login_id').val() == '') {
+                errors.push('ログインIDを入力してください。');
+            }
+
+            if ($('#password').val() == '') {
+                errors.push('パスワードを入力してください。');
+            }
+
+            if (errors.length != 0) {
+                $('#errors').html(errors.join('<br>'));
+                return false;
+            }
+
+            return true;
+        }
+    </script>
+</head>
+<body>
+<div id="container">
+    <div id="menuArea">
+        <div id="logoArea">
+            <img src="common/images/logo.png" alt="Test Creator LMS" />
+        </div>
+        <ul class="menu">
+            <li class="current">Login</li>
+        </ul>
+    </div>
+    <div id="contentArea">
+        <div id="errors" class="caution">
+            {foreach $errors as $error name='loop'}
+            {$error}<br />
+            {/foreach}
+        </div>
+        <form action="login.php" method="post" id="loginForm">
+            <table>
+                <tr>
+                    <th>ID</th>
+                    <td><input type="text" name="login_id" id="login_id" value="{if !empty($data)}{$data.login_id}{/if}" /></td>
+                </tr>
+                <tr>
+                    <th>PASSWORD</th>
+                    <td><input type="password" name="password" id="password" value="{if !empty($data)}{$data.password}{/if}" /></td>
+                </tr>
+                <tr>
+                    <th></th>
+                    <td><input type="submit" value="LOGIN" class="submitButton" style="color: black;"/></td>
+                </tr>
+            </table>
+        </form>
+    </div>
+</div>
+</body>
+</html>

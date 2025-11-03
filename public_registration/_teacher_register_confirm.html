@@ -1,0 +1,132 @@
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="robots" content="noindex">
+    <title>LMSユーザー申請画面</title>
+    <link rel="stylesheet" href="common/style.css?202301091848" type="text/css">
+    <script src="common/scripts/registration_user.js"></script>
+    <script type="text/javascript">
+    // const consent_chk = document.querySelector(`#consent-chk`);
+    // const submit_btn = document.querySelector(`input[type=submit]`);
+    //
+    // consent_chk.addEventListener('change', () => {
+    //
+    //   if (consent_chk.checked === true) {
+    //     submit_btn.disabled = false;
+    //   } else {
+    //     submit_btn.disabled = true;
+    //   }
+    //
+    // });
+    </script>
+</head>
+<body>
+
+<div id="contents">
+
+    <div class="user_register_form">
+        <h1 style="margin: 0px 0px 35px 20px; background-image:none;"><img src="common/img/logo_e.png" alt="" width="95px;" style="margin:10px 15px -8px -50px;">LMSご利用申請</h1>
+        <div style="margin: 20px 30px;font-size: 12pt;">
+            <p style="margin-bottom: -10px;">※ご利用申請は、以下の「申請フォーム」からお願いいたします。必要事項について、ご入力いただき、ページ下部の「確認画面へ」ボタンをクリックしてください。</p>
+            <p style="margin-bottom: -10px;">※本サービスは対象書籍をご採用いただいた高等学校・中学校・中等教育学校様向けのものとなります。受注の確認が取れてから、配信サイトにログインするためのアカウントを発行させていただいております。ご申請からご利用まで数日いただくことになりますことご承知おきください。</p>
+            <p>※発行したアカウントのご送信時に、ご利用までの手順書を同封いたしております。手順書をご確認の上、ご利用ください。</p>
+            <div style="border-left:6px solid #e88000;padding-left: 15px;">
+                <h3>申請フォーム</h3>
+            </div>
+        </div>
+
+        {if !empty($errors)}
+        {foreach $errors as $error name='loop'}
+        <span class="error">{$error}</span><br />
+        {/foreach}
+        {/if}
+        <form method="post" action="teacher_register_confirm.php">
+            <table class="admin_list">
+                <tr>
+                    <th>学校郵便番号<span style="font-size: small;">(必須)</span>
+                        <div class="caption" style="font-size: small;">例：000-0000(半角)</div></th>
+                    <td>{$teacher.school_zip}</td>
+                </tr>
+                <th>学校<span style="font-size: small;">(必須)</span></th>
+                <td>
+                    {foreach $schoolList as $school name='loop'}
+                    {if $teacher.school_id == $school.id}{$school.name}{/if}
+                    {/foreach}
+                </td>
+                <tr>
+                    <th>都道府県</th>
+                    <td>{$teacher.school_pref}</td>
+                </tr>
+                <tr>
+                    <th>学校住所</th>
+                    <td>{$teacher.school_address}</td>
+                </tr>
+                <tr>
+                    <th>電話番号<span style="font-size: small;">(必須)</span>
+                        <div class="caption" style="font-size:small">例：0000000000<br/ >(半角・ハイフンなし)</div></th>
+                    <td>{$teacher.phone}</td>
+                </tr>
+                <tr>
+                    <th>姓<span style="font-size: small;">(必須)</span></th>
+                    <td>{$teacher.name_1}</td>
+                </tr>
+                <tr>
+                    <th>名<span style="font-size: small;">(必須)</span></th>
+                    <td>{$teacher.name_2}</td>
+                </tr>
+                <tr>
+                    <th>セイ<span style="font-size: small;">(必須)</span></th>
+                    <td>{$teacher.kana_1}</td>
+                </tr>
+                <tr>
+                    <th>メイ<span style="font-size: small;">(必須)</span></th>
+                    <td>{$teacher.kana_2}</td>
+                </tr>
+                <tr>
+                    <th>メールアドレス<span style="font-size: small;">(必須)</span><br><span style="font-size: 9pt;color: red;line-height: 9pt;">※ご勤務先のメールアドレスをご入力ください</span></th>
+                    <td>{$teacher.mail}</td>
+                </tr>
+            </table>
+
+            <h2 style="margin: 45px 0 15px 25px;">利用書籍タイトル<br />
+                <span style="font-size: 16px;color: red;">※ご採用頂きました書籍（30冊以上）だけご利用頂けます。<br />
+                    &emsp;選択される際、書籍のEditionや版をお間違えないようにお願いいたします。</span></h2>
+            <table>
+                <tr>
+                    <td>
+                        <div><span class="pointbox"></span>デジタルコンテンツ</div>
+{if !isset($teacher.is_e_onigiri) && !isset($teacher.teacher_ebook)}
+                        選択なし
+{else}
+    {if isset($teacher.is_e_onigiri) && $teacher.is_e_onigiri}e-ONIGIRI英単語<br />{/if}
+    {foreach $ebooks as $ebook name='loop'}
+    {if isset($teacher.teacher_ebook) && in_array($ebook.title_no, $teacher.teacher_ebook)}e-ONIGIRI参考書 {$ebook.name}<br />{/if}
+    {/foreach}
+{/if}
+	                    <div><span class="pointbox"></span>英語</div>
+                        {foreach $bookList[0] as $data name='loop'}
+                        {if $data.title_no|in_array:$teacherBookTempList}
+                        {$data.name}<br />
+                        {/if}
+                        {/foreach}
+                        {if !$isSelectEnglish}選択なし{/if}
+                        <div><span class="pointbox"></span>国語</div>
+                        {foreach $bookList[1] as $data name='loop'}
+                        {if $data.title_no|in_array:$teacherBookTempList}
+                        {$data.name}<br />
+                        {/if}
+                        {/foreach}
+                        {if !$isSelectJapanese}選択なし{/if}
+                    </td>
+                </tr>
+            </table>
+
+            <div class="buttonArea">
+                <input type="button" class="bb" style="margin-top:20px;" name="back" value="戻る" onclick="javascript:location.href='teacher_register.php?back=1'" />　
+                <input type="submit" class="bb" style="margin-top:20px;" name="submit" value="申請" />
+            </div>
+        </form>
+    </div>
+</div>
+</body>
+</html>

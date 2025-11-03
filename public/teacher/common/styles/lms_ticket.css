@@ -1,0 +1,22 @@
+.buttonArea {
+    margin-top: 15px;
+}
+
+#applicationForm .normalButton,
+#groupRegistrationForm .normalButton,
+#searchForm .normalButton {
+    width: 130px;
+    padding: 10px 0;
+    font-size: 0.8em;
+}
+
+#userList th,
+#userList td {
+    padding: 4px;
+    border-right: 1px solid #666;
+    border-bottom: 1px solid #666;
+    border-top: 1px solid #666;
+    font-weight: normal;
+    text-align: left;
+    font-size: 12px;
+}

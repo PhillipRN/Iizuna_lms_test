@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    {include file='_gtag.html'}
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex">
+    <title>Class/Group</title>
+
+    {include file='_favicon.html'}
+
+    <link rel="stylesheet" href="../common/styles/reset.css" type="text/css">
+    <link rel="stylesheet" href="./common/styles/layout.css?20240120" type="text/css">
+    <script src="../common/scripts/jquery-3.6.0.min.js"></script>
+    <script type="text/javascript">
+        $(function() {
+            $('#groupRegistrationForm').submit(registrationSubmit);
+            $('.isEnable').click(changeEnable);
+            $('.delete').click(deleteRecord);
+        });
+
+        function registrationSubmit() {
+            let form = $('#groupRegistrationForm');
+
+            var errors = [];
+
+            let application_amount = $('#application_amount').val();
+
+            if (application_amount == '') {
+                errors.push('申請人数を入力してください。');
+            }
+            else if (application_amount <= 0) {
+                errors.push('申請人数は1以上の数値で入力してください。');
+            }
+
+            if (errors.length != 0) {
+                $('#errors').html(errors.join('<br>'));
+                $(window).scrollTop($('#errors').position().top);
+            }
+            else {
+                $('#errors').html('');
+
+                $.ajax({
+                    url: 'group_update_register.php',
+                    type: 'post',
+                    data: form.serialize(),
+                    timeout: 30000,
+                })
+                    .done(function(result) {
+                        if (result.error != null)
+                        {
+                            $('#errors').html(result.error['message'] + ' (' + result.error['code'] + ')');
+                            return;
+                        }
+                        else if (result.result == 'OK')
+                        {
+                            alert('登録しました。');
+                            window.location = './group.php';
+                            return;
+                        }
+                        else
+                        {
+                            alert('エラーが発生しました。');
+                            return;
+                        }
+                    })
+                    .fail(function(result) {
+                        alert('エラーが発生しました。');
+                        return;
+                    });
+            }
+
+            return false;
+        }
+
+        function changeEnable() {
+            let id = $(this).data('id');
+            let is_enable = $(this).data('is_enable');
+
+            $.ajax({
+                url: 'group_register_is_enable.php',
+                type: 'post',
+                data: {
+                    'id': id,
+                    'is_enable': (is_enable == 1) ? 0 : 1
+                },
+                timeout: 30000,
+            })
+            .done(function(result) {
+                if (result.error != null)
+                {
+                    $('#errors').html(result.error['message'] + ' (' + result.error['code'] + ')');
+                    return;
+                }
+                else
+                {
+                    alert('更新しました。');
+                    location.reload();
+                    return;
+                }
+            })
+            .fail(function(result) {
+                alert('エラーが発生しました。');
+                return;
+            });
+
+            return false;
+        }
+
+        function deleteRecord() {
+            let name = $(this).data('name');
+
+            if (confirm("本当に「 " + name + " 」のグループコードを削除しますか？\n※削除されたコードは元に戻すことはできません。") == false)
+            {
+                return;
+            }
+
+            let id = $(this).data('id');
+
+            $.ajax({
+                url: 'group_delete.php',
+                type: 'post',
+                data: {
+                    'id': id
+                },
+                timeout: 30000,
+            })
+                .done(function(result) {
+                    if (result.error != null)
+                    {
+                        $('#errors').html(result.error['message'] + ' (' + result.error['code'] + ')');
+                        return;
+                    }
+                    else
+                    {
+                        alert('削除しました。');
+                        window.location = './group.php';
+                        return;
+                    }
+                })
+                .fail(function(result) {
+                    alert('エラーが発生しました。');
+                    return;
+                });
+
+            return false;
+        }
+
+    </script>
+</head>
+<body>
+<div id="container">
+    <div id="menuArea">
+        <div id="logoArea">
+            <img src="common/images/logo.png" alt="Test Creator LMS" />
+        </div>
+{include file='_side_menu.html' isJuku=$isJuku current='group'}
+    </div>
+
+    <div id="contentArea">
+        <h2>グループコード操作</h2>
+
+        <table class="separateTable">
+            <tr>
+                <th>コード名</th>
+                <td>{$record.name}</td>
+            </tr>
+            <tr>
+                <th>発行者</th>
+                <td>{if empty($record.teacher_name_1) && empty($record.teacher_name_2)}-{else}{$record.teacher_name_1} {$record.teacher_name_2}{/if}</td>
+            </tr>
+            <tr>
+                <th>有料/無料</th>
+                <td>
+                    {if $record.paid_application_status == 1}
+                    申請中
+                    {else}
+                    {if $record.is_paid == 1}有料{else}無料{/if}
+                    {/if}
+                </td>
+            </tr>
+            <tr>
+                <th>人数</th>
+                <td>
+                    {if $record.is_school == 0 && $record.is_paid == 1}
+                    {if $record.paid_application_status == 1}
+                    -
+                    {else}
+                    {$record.application_total}
+                    {/if}
+                    {else}-{/if}
+                </td>
+            </tr>
+            <tr>
+                <th>コード</th>
+                <td>
+                    {if $record.paid_application_status == 1}-{else}{$record.lms_code}{/if}
+                </td>
+            </tr>
+            <tr>
+                <th>有効/無効</th>
+                <td>
+                    <button class="normalButton small isEnable{if $record.is_enable == 0} disabled{/if}" data-id="{$record.id}" data-is_enable="{$record.is_enable}">
+                        {if $record.is_enable == 1}有効{else}無効{/if}
+                    </button>
+                </td>
+            </tr>
+        </table>
+
+        {if $record.is_school == 0 && $record.is_paid == 1}
+        <h2 style="margin-top: 25px">人数追加申請</h2>
+        <div id="errors" class="caution"></div>
+        <div style="margin-bottom: 20px">
+            <form id="groupRegistrationForm">
+                <input type="hidden" name="_csrf" value="{$csrf}" />
+                <input type="hidden" name="lcid" value="{$record.lms_code_id}" />
+                <input type="number" name="application_amount" value="0" id="application_amount" style="width: 100px" /> 人分
+                <button class="normalButton small">申請</button>
+            </form>
+        </div>
+
+        <div>
+            申請履歴
+            <table class="separateTable">
+                <tr>
+                    <th>日時</th>
+                    <th>申請人数</th>
+                    <th>ステータス</th>
+                </tr>
+                {foreach $applicationRecords as $applicationRecord name='loop'}
+                <tr>
+                    <td>{$applicationRecord.create_date|date_format:"%g-%m-%d %T"}</td>
+                    <td>{$applicationRecord.application_amount}</td>
+                    <td>
+                        {if $applicationRecord.paid_application_status == 1}
+                        申請中
+                        {else if $applicationRecord.paid_application_status == 2}
+                        追加申請中
+                        {else}
+                        許可済
+                        {/if}
+                    </td>
+                </tr>
+                {/foreach}
+            </table>
+        </div>
+        {/if}
+
+        <div style="margin-top: 20px">
+            <h2>削除</h2>
+            <div class="buttonArea">
+                <button class="normalButton small delete"  data-id="{$record.id}" data-name="{$record.name}">削除</button>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

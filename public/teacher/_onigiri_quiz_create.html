@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    {include file='_gtag.html'}
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex">
+    <title>Result</title>
+
+    {include file='_favicon.html'}
+
+    <link rel="stylesheet" href="../common/styles/reset.css" type="text/css">
+    <link rel="stylesheet" href="../common/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="./common/styles/layout.css?20240120" type="text/css">
+    <link rel="stylesheet" href="./common/styles/onigiri_quiz.css" type="text/css">
+    <script src="../common/scripts/jquery-3.6.0.min.js"></script>
+    <script src="../common/scripts/jqueryui/jquery-ui.min.js"></script>
+
+    <!-- flatpickr -->
+    <link rel="stylesheet" type="text/css" href="../common/flatpickr/flatpickr.min.css" />
+    <script src="../common/flatpickr/flatpickr.min.js"></script>
+    <script src="../common/flatpickr/l10n/ja.js"></script>
+
+    <script type="text/javascript">
+        $(function() {
+            $(".period").flatpickr({
+                'locale' : 'ja',
+                'dateFormat' : 'Y-m-d H:i',
+                enableTime  : true
+            });
+            $("#copyButton").on('click', copyQuiz);
+            $("#createSameScopeButton").on('click', createSameScope);
+        });
+    </script>
+    {if !empty($questions)}
+    <script type="text/javascript">
+        let currentRowNumber = {$questions|@count};
+    </script>
+    {else}
+    <script type="text/javascript">
+        let currentRowNumber = 0;
+    </script>
+    {/if}
+
+    <script type="text/javascript">
+        $(function() {
+            $('#resultClass').change(changeClass);
+            $('#createButton').click(createQuiz);
+
+            $("#problemList").sortable({
+                items: 'tr:not(tr:first-child)',
+                cursor: 'pointer',
+                axis: 'y',
+                start: function (e, ui) {
+                    ui.item.addClass("selected");
+                },
+                stop: function (e, ui) {
+                    ui.item.removeClass("selected");
+                    $(this).find("tr").each(function (index) {
+                        // Note: 更新時に何か変更が必要であれば行う
+                    });
+                }
+            });
+        });
+
+        function changeClass() {
+            $.ajax({
+                url: 'onigiri_quiz_create_get_stages.php',
+                type: 'post',
+                data: { 'lms_code_id': $(this).val() },
+                timeout: 30000,
+            })
+            .done(function(result) {
+                if (result.result =='OK')
+                {
+                    $('#stages').html('');
+
+                    var stagesHtml = '';
+
+                    for (let i = 0; i < result.rangeData.length; i++)
+                    {
+                        var myId = result.rangeData[i].sequential_number;
+                        var myTitle = result.rangeData[i].title;
+                        var myChecked = (i==0) ? 'checked' : '';
+                        var myValue = result.rangeData[i].value;
+
+                        stagesHtml += '<input type="checkbox" name="stage[]" value="' + myId + '#' + myValue + '" id="stage_' + myId  + '" ' + myChecked + ' /> <label for="stage_' + myId  + '">Stage ' + myId  + ' (' + myTitle + ')</label><br />';
+                    }
+
+                    $('#stages').html(stagesHtml);
+
+                    return;
+                } else if (result.error != null)
+                {
+                    $('#errors').html(result.error['message'] + ' (' + result.error['code'] + ')');
+                    return;
+                }
+                else
+                {
+                    alert('エラーが発生しました。');
+                    return;
+                }
+            })
+            .fail(function(result) {
+                alert('エラーが発生しました。');
+                return;
+            });
+
+            return false;
+        }
+
+        function createQuiz() {
+            let form = $("#quizForm");
+
+            $.ajax({
+                url: 'onigiri_quiz_create_register.php',
+                type: 'post',
+                data: form.serialize(),
+                timeout: 30000,
+            })
+                .done(function(result) {
+                    if (result.result =='OK')
+                    {
+                        alert('登録しました。');
+                        if (choiceQuizWindow != null) choiceQuizWindow.close();
+                        window.location.href = './onigiri_quiz.php';
+                        return;
+                    } else if (result.error != null)
+                    {
+                        $('#errors').html(result.error['message'] + ' (' + result.error['code'] + ')');
+                        return;
+                    }
+                    else
+                    {
+                        alert('エラーが発生しました。');
+                        return;
+                    }
+                })
+                .fail(function(result) {
+                    alert('エラーが発生しました。');
+                    return;
+                });
+
+            return false;
+        }
+
+        let choiceQuizWindow = null;
+
+        function openChoiceProblemWindow() {
+            const url = 'onigiri_quiz_choice.php';
+            const options = 'width=1000px,height=600px,menubar=no';
+            choiceQuizWindow = window.open(url, 'ChoiceQuizWindow', options);
+        }
+
+        function addProblem(id, word, meaning, type) {
+            let table = $('#problemList');
+            table.append('<tr id="row_' + currentRowNumber + '">' +
+                '<td style="width: 150px"><input type="hidden" name="word_ids[]" value="' + id + '">' + word + '</td>' +
+                '<td style="width: 190px">' + meaning + '</td>' +
+                '<td style="width: 245px"><select name="types[]" class="problemType">\n' +
+                '<option value="random">ランダム</option>\n' +
+                '<option value="four_choice_ja_en">日本語→英語　4択</option>\n' +
+                '<option value="input_ja_en">日本語→英語　入力</option>\n' +
+                '<option value="four_choice_en_ja">英語→日本語　4択</option>\n' +
+                '<option value="input_fill_in_en_example">英語例文穴埋め　入力</option>\n' +
+                '<option value="input_listening_en_example">英語例文聞き取り　入力</option>\n' +
+                '<option value="input_listening_en_word">英単語聞き取り　入力</option>\n' +
+                '<option value="four_choice_listening">英単語聞き取り　4択</option>\n' +
+                '</select></td>' +
+                '<td style="width: 80px"><button type="button" onclick="deleteProblem(\'' + currentRowNumber + '\')">削除</button></td>' +
+                '</tr>');
+            ++currentRowNumber;
+        }
+
+        function deleteProblem(rowNumber) {
+            $('#row_' + rowNumber).remove();
+        }
+
+        function batchChangeProblemType() {
+            let type = $('#batchChangeType').val();
+
+            $('.problemType option').prop('selected', false);
+            $(".problemType option[value='" + type + "']").prop('selected', true);
+        }
+
+        function copyQuiz() {
+            copyOrSameScope(true);
+        }
+
+        function createSameScope() {
+            copyOrSameScope(false);
+        }
+
+        function copyOrSameScope(isCopy) {
+            let url = isCopy ? 'onigiri_quiz_copy.php' : 'onigiri_quiz_create_same_scope.php';
+            let copyTitle = $('#copyTitle').val();
+            $('#copyErrors').html('');
+
+            if (copyTitle =='') {
+                $('#errorCopyTitle').show();
+                $('#copyErrors').html('タイトルを入力してください。');
+                return false;
+            }
+
+            $('#errorCopyTitle').hide();
+
+            let form = $('#copyForm');
+
+            $.ajax({
+                url: url,
+                type: 'post',
+                data: form.serialize(),
+                timeout: 30000,
+            })
+                .done(function(result) {
+                    if (result.result == 'OK')
+                    {
+                        alert('作成しました。');
+                        window.location.href = './onigiri_quiz.php';
+                        return;
+                    } else if (result.error != null)
+                    {
+                        $('#copyErrors').html(result.error['message'] + ' (' + result.error['code'] + ')');
+                        return;
+                    }
+                    else
+                    {
+                        alert('エラーが発生しました。');
+                        return;
+                    }
+                })
+                .fail(function(result) {
+                    alert('エラーが発生しました。');
+                    return;
+                });
+
+            return false;
+        }
+
+        function moveFolder() {
+            let parentFolderId = $("#parentFolder").val();
+
+            let formData = {
+                'quiz_id': '{$quizId}',
+                'parent_folder_id': parentFolderId,
+                '_csrf': '{$csrf}'
+            }
+
+            $.ajax({
+                url: 'onigiri_quiz_folder_move.php',
+                type: 'post',
+                data: formData,
+                timeout: 30000,
+            })
+            .done(function (result) {
+                if (result.error != null) {
+                    alert(result.error.message);
+                } else if (result.result == 'OK') {
+                    alert('フォルダ移動しました');
+                    location.reload();
+                } else {
+                    alert('予期せぬエラーが発生しました');
+                }
+            })
+            .fail(function (result) {
+                alert('予期せぬエラーが発生しました');
+            });
+        }
+    </script>
+    {if $isUpdate}
+    <script type="text/javascript">
+        $(function() {
+            $('#moveFolderButton').on('click', moveFolder);
+        });
+    </script>
+    {/if}
+</head>
+<body>
+<div id="container">
+    <div id="menuArea">
+        <div id="logoArea">
+            <img src="common/images/logo.png" alt="Test Creator LMS" />
+        </div>
+{include file='_side_menu.html' isJuku=$isJuku current='onigiri_quiz'}
+    </div>
+
+    <div id="contentArea">
+        <h2>テスト作成</h2>
+
+        <div id="errors" class="caution"></div>
+
+        {if $data.is_answered || $data.is_delivered || $notEditable}
+        <p class="caution">
+            {if $isOtherTeacher}このテストは他の先生が作成したため変更できません。
+            {else if $data.is_answered}このテストはすでに回答者がいるため変更できません。
+            {else}このテストはすでに配信されているため変更できません。
+            {/if}
+        </p>
+        <table class="table table-bordered">
+            <tbody>
+            <tr>
+                <th>フォルダ</th>
+                <td>
+                    {if $isOtherTeacher}
+                    {$currentFolder.name}
+                    {else}
+                    <select name="parent_folder_id" id="parentFolder">
+                        {$folderListOptions}
+                    </select>
+                    {if $isUpdate}<button type="button" id="moveFolderButton">フォルダ移動</button>{/if}
+                    {/if}
+                </td>
+            </tr>
+            <tr>
+                <th>タイトル</th>
+                <td>
+                    {$data.title}
+                </td>
+            </tr>
+            <tr>
+                <th>期間</th>
+                <td>
+                    {$data.open_date} ～ {$data.expire_date}
+                </td>
+            </tr>
+            <tr>
+                <th>制限時間</th>
+                <td>
+                    {for $value=0 to 30}
+                    {if $value == 0}{assign var=time_limit_label value="なし"}
+                    {else}{assign var=time_limit_label value="`$value`分"}
+                    {/if}
+                    {if $data.time_limit == $value}{$time_limit_label}{/if}
+                    {/for}
+                </td>
+            </tr>
+{if $isManual}
+            <tr>
+                <th style="width: 200px">問題</th>
+                <td>
+                    <table id="problemList">
+                        <tr>
+                            <th style="width: 150px">単語</th>
+                            <th style="width: 190px">意味</th>
+                            <th style="width: 245px">問題形式</th>
+                        </tr>
+{if !empty($questions)}
+{foreach $questions as $question name='loop'}
+                        <tr id="row_{$smarty.foreach.loop.index}">
+                            <td style="width: 150px"><input type="hidden" name="word_ids[]" value="{$question.id}">{$question.word}</td>
+                            <td style="width: 190px">{$question.mean}</td>
+                            <td style="width: 245px">
+                                {if $question.type=='random'}ランダム{/if}
+                                {if $question.type=='four_choice_ja_en'}日本語→英語　4択{/if}
+                                {if $question.type=='input_ja_en'}日本語→英語　入力{/if}
+                                {if $question.type=='four_choice_en_ja'}英語→日本語　4択{/if}
+                                {if $question.type=='input_fill_in_en_example'}英語例文穴埋め　入力{/if}
+                                {if $question.type=='input_listening_en_example'}英語例文聞き取り　入力{/if}
+                                {if $question.type=='input_listening_en_word'}英単語聞き取り　入力{/if}
+                                {if $question.type=='four_choice_listening'}英単語聞き取り　4択{/if}
+                            </td>
+                        </tr>
+{/foreach}
+{/if}
+                    </table>
+                </td>
+            </tr>
+{else}
+            <tr>
+                <th style="width: 200px">範囲</th>
+                <td>
+                    {foreach $schoolGroups as $schoolGroup name='loop'}
+                    {if $currentLmsCodeId==$schoolGroup.lms_code_id}{$schoolGroup.name}{/if}
+                    {/foreach}
+                    <br />
+                    <br />
+                    <div>
+                        {if empty($data.ranges) || count($data.ranges) == 0}
+                        このテストは範囲を確認することができません。
+                        {else}
+                        {foreach $data.rangesString as $rangeString name='loop'}
+                            ・{$rangeString}<br />
+                        {/foreach}
+                        {/if}
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <th>問題数</th>
+                <td>
+                    <input type="radio" name="total" {if $data.total==10}checked{/if} disabled> <label for="number_10">10</label><br />
+                    <input type="radio" name="total" {if $data.total==20}checked{/if} disabled> <label for="number_20">20</label><br />
+                    <input type="radio" name="total" {if $data.total==30}checked{/if} disabled> <label for="number_30">30</label>
+                </td>
+            </tr>
+            <tr>
+                <th>問題形式</th>
+                <td>
+{if $data.type=='random'}ランダム{/if}
+{if $data.type=='four_choice_ja_en'}日本語→英語　4択{/if}
+{if $data.type=='input_ja_en'}日本語→英語　入力{/if}
+{if $data.type=='four_choice_en_ja'}英語→日本語　4択{/if}
+{if $data.type=='input_fill_in_en_example'}英語例文穴埋め　入力{/if}
+{if $data.type=='input_listening_en_example'}英語例文聞き取り　入力{/if}
+{if $data.type=='input_listening_en_word'}英単語聞き取り　入力{/if}
+{if $data.type=='four_choice_listening'}英単語聞き取り　4択{/if}
+                    </select>
+                </td>
+            </tr>
+{/if}
+            </tbody>
+        </table>
+        {else}
+        <form method="post" id="quizForm" onsubmit="return false;">
+            {if !empty($data.id)}<input type="hidden" name="id" value="{$data.id}" id="quiz_id" />{/if}
+            <input type="hidden" name="_csrf" value="{$csrf}" />
+            <input type="hidden" name="manual" value="{if $isManual}1{else}0{/if}">
+            <table class="table table-bordered" style="table-layout: fixed">
+                <tbody>
+                <tr>
+                    <th style="width: 100px">フォルダ</th>
+                    <td>
+                        <select name="parent_folder_id" id="parentFolder">
+                            {$folderListOptions}
+                        </select>
+                        {if $isUpdate}<button type="button" id="moveFolderButton">フォルダ移動</button>{/if}
+                    </td>
+                </tr>
+                <tr>
+                    <th style="width: 100px">タイトル</th>
+                    <td>
+                        <input type="text" name="title" value="{$data.title}" />
+                    </td>
+                </tr>
+                <tr>
+                    <th>期間</th>
+                    <td>
+                        <input type="text" name="open_date" value="{$data.open_date}" style="width: 160px;" class="period" /> ～
+                        <input type="text" name="expire_date" value="{$data.expire_date}" style="width: 160px;" class="period" />
+                    </td>
+                </tr>
+                <tr>
+                    <th>制限時間</th>
+                    <td>
+                        <select name="time_limit" style="width: 100px">
+{for $value=0 to 30}
+{if $value == 0}{assign var=time_limit_label value="なし"}
+{else}{assign var=time_limit_label value="`$value`分"}
+{/if}
+                            <option value="{$value}" {if $data.time_limit == $value}selected{/if}>{$time_limit_label}</option>
+{/for}
+                        </select>
+                    </td>
+                </tr>
+{if $isManual}
+                <tr>
+                    <th style="width: 200px">問題</th>
+                    <td>
+                        <table id="problemList">
+                            <tr>
+                                <th style="width: 150px">単語</th>
+                                <th style="width: 190px">意味</th>
+                                <th style="width: 245px">問題形式</th>
+                                <th style="width: 80px">操作</th>
+                            </tr>
+{if !empty($questions)}
+{foreach $questions as $question name='loop'}
+                            <tr id="row_{$smarty.foreach.loop.index}">
+                                <td style="width: 150px"><input type="hidden" name="word_ids[]" value="{$question.id}">{$question.word}</td>
+                                <td style="width: 190px">{$question.mean}</td>
+                                <td style="width: 245px">
+                                    <select name="types[]" class="problemType">
+                                        <option value="random" {if $question.type=='random'}selected{/if}>ランダム</option>
+                                        <option value="four_choice_ja_en" {if $question.type=='four_choice_ja_en'}selected{/if}>日本語→英語　4択</option>
+                                        <option value="input_ja_en" {if $question.type=='input_ja_en'}selected{/if}>日本語→英語　入力</option>
+                                        <option value="four_choice_en_ja" {if $question.type=='four_choice_en_ja'}selected{/if}>英語→日本語　4択</option>
+                                        <option value="input_fill_in_en_example" {if $question.type=='input_fill_in_en_example'}selected{/if}>英語例文穴埋め　入力</option>
+                                        <option value="input_listening_en_example" {if $question.type=='input_listening_en_example'}selected{/if}>英語例文聞き取り　入力</option>
+                                        <option value="input_listening_en_word" {if $question.type=='input_listening_en_word'}selected{/if}>英単語聞き取り　入力</option>
+                                        <option value="four_choice_listening" {if $question.type=='four_choice_listening'}selected{/if}>英単語聞き取り　4択</option>
+                                    </select>
+                                </td>
+                                <td style="width: 80px"><button type="button" onclick="deleteProblem('{$smarty.foreach.loop.index}')">削除</button></td>
+                            </tr>
+{/foreach}
+{/if}
+                        </table>
+                        <button type="button" onclick="openChoiceProblemWindow()">問題を追加</button>
+                    </td>
+                </tr>
+                <tr>
+                    <th>
+                        問題形式<br />
+                        一括変更
+                    </th>
+                    <td>
+                        <select name="type" id="batchChangeType">
+                            <option value="random" {if $data.type=='random'}selected{/if}>ランダム</option>
+                            <option value="four_choice_ja_en" {if $data.type=='four_choice_ja_en'}selected{/if}>日本語→英語　4択</option>
+                            <option value="input_ja_en" {if $data.type=='input_ja_en'}selected{/if}>日本語→英語　入力</option>
+                            <option value="four_choice_en_ja" {if $data.type=='four_choice_en_ja'}selected{/if}>英語→日本語　4択</option>
+                            <option value="input_fill_in_en_example" {if $data.type=='input_fill_in_en_example'}selected{/if}>英語例文穴埋め　入力</option>
+                            <option value="input_listening_en_example" {if $data.type=='input_listening_en_example'}selected{/if}>英語例文聞き取り　入力</option>
+                            <option value="input_listening_en_word" {if $data.type=='input_listening_en_word'}selected{/if}>英単語聞き取り　入力</option>
+                            <option value="four_choice_listening" {if $data.type=='four_choice_listening'}selected{/if}>英単語聞き取り　4択</option>
+                        </select>
+                        <button type="button" onclick="batchChangeProblemType()">変更</button>
+                        <br />
+                        ※個別で指定されている問題形式を一括で変更します。
+                    </td>
+                </tr>
+{else}
+                <tr>
+                    <th style="width: 200px">範囲</th>
+                    <td>
+                        <select id="resultClass" name="lms_code_id">
+                            {foreach $schoolGroups as $schoolGroup name='loop'}
+                            <option value="{$schoolGroup.lms_code_id}" {if $currentLmsCodeId==$schoolGroup.lms_code_id}selected{/if}>{$schoolGroup.name}</option>
+                            {/foreach}
+                        </select>
+                        <br />
+                        <div id="stages">
+                        {foreach $rangeData as $range name='loop'}
+                        <input type="checkbox" name="stage[]" value="{$range.sequential_number}#{$range.value}" id="stage_{$range.sequential_number}" {if in_array($range.value, $data.ranges)}checked{/if} /> <label for="stage_{$range.sequential_number}">Stage {$range.sequential_number} ({$range.title})</label><br />
+                        {/foreach}
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <th>問題数</th>
+                    <td>
+                        <input type="radio" name="total" value="10" id="number_10" {if $data.total==10}checked{/if}> <label for="number_10">10</label><br />
+                        <input type="radio" name="total" value="20" id="number_20" {if $data.total==20}checked{/if}> <label for="number_20">20</label><br />
+                        <input type="radio" name="total" value="30" id="number_30" {if $data.total==30}checked{/if}> <label for="number_30">30</label>
+                    </td>
+                </tr>
+                <tr>
+                    <th>問題形式</th>
+                    <td>
+                        <select name="type">
+                            <option value="random" {if $data.type=='random'}selected{/if}>ランダム</option>
+                            <option value="four_choice_ja_en" {if $data.type=='four_choice_ja_en'}selected{/if}>日本語→英語　4択</option>
+                            <option value="input_ja_en" {if $data.type=='input_ja_en'}selected{/if}>日本語→英語　入力</option>
+                            <option value="four_choice_en_ja" {if $data.type=='four_choice_en_ja'}selected{/if}>英語→日本語　4択</option>
+                            <option value="input_fill_in_en_example" {if $data.type=='input_fill_in_en_example'}selected{/if}>英語例文穴埋め　入力</option>
+                            <option value="input_listening_en_example" {if $data.type=='input_listening_en_example'}selected{/if}>英語例文聞き取り　入力</option>
+                            <option value="input_listening_en_word" {if $data.type=='input_listening_en_word'}selected{/if}>英単語聞き取り　入力</option>
+                            <option value="four_choice_listening" {if $data.type=='four_choice_listening'}selected{/if}>英単語聞き取り　4択</option>
+                        </select>
+                    </td>
+                </tr>
+{/if}
+                </tbody>
+            </table>
+
+            <div>
+                <button type="button" class="normalButton large" id="createButton">テスト作成</button>
+            </div>
+        </form>
+        {/if}
+
+        {if $isUpdate}
+        <h2 style="margin-top: 60px;">テストの複製</h2>
+        <div id="copyErrors" class="caution"></div>
+        <form method="post" action="" id="copyForm">
+            <input type="hidden" name="_csrf" value="{$csrf}" />
+            <input type="hidden" name="quiz_id" value="{$quizId}" />
+
+            <table class="table table-bordered" style="table-layout: fixed">
+                <tbody>
+                <tr>
+                    <th style="width: 200px">タイトル</th>
+                    <td>
+                        <input type="text" name="title" value="{$data.title}" id="copyTitle" />
+                    </td>
+                </tr>
+                <tr>
+                    <th>期間</th>
+                    <td>
+                        <input type="text" name="open_date" value="{$data.open_date}" style="width: 160px;" class="period" /> ～
+                        <input type="text" name="expire_date" value="{$data.expire_date}" style="width: 160px;" class="period" />
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+
+            <div>
+                <button type="button" class="normalButton large" id="copyButton">テストを複製する</button>　
+                <button type="button" class="normalButton large" id="createSameScopeButton">同じテスト範囲で作成</button>
+            </div>
+        </form>
+        {/if}
+
+
+        <div style="margin-top: 60px;">
+            <a href="onigiri_quiz.php">戻る</a>
+        </div>
+    </div>
+</div>
+</body>
+</html>

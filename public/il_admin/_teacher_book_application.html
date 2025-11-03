@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <meta name="robots" content="noindex">
+    <title>管理画面</title>
+
+    {include file='_favicon.html'}
+
+    <link rel="stylesheet" href="../common/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="./common/style.css?202201292100" type="text/css">
+    <link rel="stylesheet" href="./common/admin.css?202303261524" type="text/css">
+    <script src="common/scripts/admin.js"></script>
+    <script src="../common/scripts/jquery-3.6.0.min.js"></script>
+    <script type="text/javascript">
+        function apploveBook(name, id) {
+            $('#errors').html('');
+
+            if (!confirm(name + "\nを承認しますか？")) return;
+
+            $.ajax({
+                url: 'teacher_book_application_register.php',
+                type: 'post',
+                data: { 'id': id },
+                timeout: 30000,
+            })
+                .done(function(result) {
+                    if (result.error != null)
+                    {
+                        $('#errors').html(result.error['message'] + ' (' + result.error['code'] + ')');
+                        return;
+                    }
+                    else if (result.result == 'OK')
+                    {
+                        alert('承認しました。');
+                        location.reload();
+                        return;
+                    }
+                    else
+                    {
+                        alert('予期せぬエラーが発生しました。');
+                        return;
+                    }
+                })
+                .fail(function(result) {
+                    alert('エラーが発生しました。');
+                    return;
+                });
+        }
+
+
+        function canselApplication(name, id) {
+            if (!confirm(name + "\nの申請を取り消します。\nよろしいですか？")) return false;
+
+            $('#errors').html('');
+
+            $.ajax({
+                url: 'teacher_book_application_canceler.php',
+                type: 'post',
+                data: { id: id },
+                timeout: 30000,
+            })
+            .done(function(result) {
+                if (result.error != null)
+                {
+                    $('#errors').html(result.error['message'] + ' (' + result.error['code'] + ')');
+                    return;
+                }
+                else
+                {
+                    alert('取り消しました。');
+                    location.reload();
+                    return;
+                }
+            })
+            .fail(function(result) {
+                alert('エラーが発生しました。');
+                return;
+            });
+
+            return false;
+        }
+    </script>
+</head>
+<body>
+<p style="margin: 10px;"><a href="index.php">戻る</a></p>
+<hr />
+<div id="contents">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-8"><h1>先生追加書籍申請管理</h1></div>
+        </div>
+    </div>
+
+    <div id="errors" class="text-danger error"></div>
+    <table class="table table-striped table-hover table-bordered">
+        <thead>
+        <tr>
+            <th scope="col" style="width: 220px">申請日時</th>
+            <th scope="col">学校/氏名</th>
+            <th scope="col">書籍</th>
+            <th scope="col" style="width: 100px">ステータス</th>
+            <th scope="col" style="width: 100px">操作</th>
+        </tr>
+        </thead>
+        <tbody>
+        {foreach $records as $record name='loop'}
+        <tr>
+            <th scope="row">{$record.create_date|date_format:"%Y-%m-%d %T"}</th>
+            <td>{$record.school_name}<br />
+                {$record.teacher_name_1} {$record.teacher_name_2}</td>
+            <td>{$record.name}</td>
+            <td style="text-align: center"{if $record.status==0} class="bg-success text-white"{/if}>{if $record.status==0}承認済{else}申請中{/if}</td>
+            <td>
+                {if $record.status==1}
+                <div style="margin-bottom: 10px">
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="apploveBook('{$record.name}', '{$record.id}')">承認</button>
+                </div>
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="canselApplication('{$record.name}', '{$record.id}')">取り消し</button>
+                {/if}
+            </td>
+        </tr>
+        {/foreach}
+        </tbody>
+    </table>
+    <nav aria-label="...">
+        <ul class="pagination pagination-sm">
+{if $currentPage < 6}
+{assign var=startPage value=1}
+{assign var=endPage value=10}
+{else}
+{assign var=startPage value=$currentPage-5}
+{assign var=endPage value=$currentPage+4}
+{/if}
+{if $endPage > $maxPageNum}
+{assign var=endPage value=$maxPageNum}
+{/if}
+
+            {for $page=$startPage to $endPage}
+            {if $page==$currentPage}
+            <li class="page-item disabled">
+                <a class="page-link">{$page}</a>
+            </li>
+            {else}
+            <li class="page-item"><a class="page-link" href="teacher_book_application.php?page={$page}">{$page}</a></li>
+            {/if}
+            {/for}
+        </ul>
+    </nav>
+</div>
+</body>
+</html>

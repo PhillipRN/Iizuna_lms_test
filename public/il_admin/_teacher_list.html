@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <meta name="robots" content="noindex">
+    <title>管理画面</title>
+
+    {include file='_favicon.html'}
+
+    <link rel="stylesheet" href="./common/style.css?202104082200" type="text/css">
+    <link rel="stylesheet" href="./common/admin.css?202104082200" type="text/css">
+    <script src="common/scripts/admin.js"></script>
+    <script src="../common/scripts/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+{if $isRegistered}
+<script type="text/javascript">
+    alert("登録しました");
+</script>
+{/if}
+{if $isDeleted}
+<script type="text/javascript">
+    alert("削除しました");
+</script>
+{/if}
+<script type="text/javascript">
+    function downloadCSV() {
+        let a = document.querySelectorAll('#tempDownloadArea_1 a');
+        a.forEach(function(e) {
+            e.click();
+        });
+    }
+    function downloadAllCSV() {
+        let a = document.querySelectorAll('#tempDownloadArea_2 a');
+        a.forEach(function(e) {
+            e.click();
+        });
+    }
+</script>
+<p style="margin: 10px;"><a href="index.php">戻る</a></p>
+<hr />
+<div id="contents">
+<h1>先生一覧画面</h1>
+    <h2>パスワード未設定先生CSVダウンロード</h2>
+    <div id="tempDownloadArea_1">
+        <a href="teacher_list_download.php?no_password_user=1" download="no_password_teachers_for_testcreator.csv"></a>
+    </div>
+    <button onclick="downloadCSV()">ダウンロード</button>
+
+    <h2>全先生CSVダウンロード</h2>
+    <div id="tempDownloadArea_2">
+        <a href="teacher_list_download.php?all_teacher=1" download="all_teachers_for_testcreator.csv"></a>
+    </div>
+    <button onclick="downloadAllCSV()">ダウンロード</button>
+
+    <h2>登録済み先生一覧</h2>
+    <input type="radio" name="e_onigiri" value="0" id="e_onigiri_0" onclick="location.href='teacher_list.php'" {if !$isEOnigiri}checked{/if}><label for="e_onigiri_0">全て</label>
+    <input type="radio" name="e_onigiri" value="1" id="e_onigiri_1" onclick="location.href='teacher_list.php?e_onigiri=1'" {if $isEOnigiri}checked{/if}><label for="e_onigiri_1">e-ONIGIRI にチェックがある先生のみ</label>
+    <br /><br />
+<table class="admin_list">
+    <tr>
+        <th>ログインID</th>
+        <th>名前</th>
+        <th>学校名</th>
+        <th>デジタルコンテンツ</th>
+        <th>更新日</th>
+        <th></th>
+    </tr>
+    {foreach $teacherList as $teacher name='loop'}
+    <tr>
+        <td>{$teacher.login_id}</td>
+        <td>{$teacher.name_1} {$teacher.name_2}</td>
+        <td>{$teacher.school_name}</td>
+        <td>{if $teacher.is_e_onigiri}e-ONIGIRI英単語{/if}</td>
+        <td>{$teacher.update_date}</td>
+        <td><button onclick="location.href='teacher_register.php?id={$teacher.id}'">更新</button></td>
+    </tr>
+    {/foreach}
+</table>
+</div>
+</body>
+</html>

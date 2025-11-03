@@ -1,0 +1,54 @@
+.error {
+    color: #c00;
+}
+
+.hidden {
+    display: none;
+}
+
+.center {
+    text-align: center;
+}
+
+table.admin_list, tr, th, td {
+    border-collapse: collapse;
+    border: solid 1px #666;
+    padding: 5px;
+}
+
+.bbb {
+	display: block;
+	text-decoration: none;
+	text-align: center;
+	padding: 1em;
+	color: #d28133;
+	width: 300px;
+	border: solid 3px #d28133;
+	border-radius: 10px;
+	font-size: large;
+	background-color: #white;
+	margin: 20px 2%;
+}
+
+a:hover {
+	background-color: #d28133;
+	color: white;
+}
+
+.required {
+	font-size: 0.8em;
+}
+
+.caption {
+	font-size: 0.8em;
+	color: #666666;
+	font-weight: normal;
+}
+
+.pagination {
+	margin-top: 15px;
+}
+
+.pagination li {
+	margin: 0;
+}

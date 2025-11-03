@@ -1,0 +1,24 @@
+set charset utf8mb4;
+
+BEGIN;
+
+# 先生の所持している電子書籍
+CREATE TABLE teacher_ebook (
+    teacher_id BIGINT UNSIGNED NOT NULL,
+    title_no INTEGER UNSIGNED NOT NULL,
+    create_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_date DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+CREATE INDEX index_teacher_ebook_teacher_id ON teacher_ebook(teacher_id);
+
+CREATE VIEW teacher_ebook_view AS 
+  SELECT 
+    t.id AS teacher_id,
+    t.name_1,
+    t.name_2,
+    te.title_no
+  FROM teacher_ebook AS te 
+  INNER JOIN teacher AS t ON t.id = te.teacher_id;
+
+COMMIT;

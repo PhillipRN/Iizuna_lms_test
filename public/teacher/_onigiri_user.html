@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    {include file='_gtag.html'}
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex">
+    <title>Onigiri ユーザーデータ</title>
+
+    {include file='_favicon.html'}
+
+    <link rel="stylesheet" href="../common/styles/reset.css" type="text/css">
+    <link rel="stylesheet" href="./common/styles/layout.css?20240120" type="text/css">
+    <script src="../common/scripts/jquery-3.6.0.min.js"></script>
+    <script type="text/javascript">
+        $(function() {
+            $('#resultClass').change(changeClass);
+        });
+
+            function changeClass() {
+                window.location.href = './onigiri_user.php?lcid=' + $(this).val();
+            }
+    </script>
+</head>
+<body>
+<div id="container">
+    <div id="menuArea">
+        <div id="logoArea">
+            <img src="common/images/logo.png" alt="Test Creator LMS" />
+        </div>
+{include file='_side_menu.html' isJuku=$isJuku current='onigiri_user'}
+    </div>
+
+    <div id="contentArea">
+        <div>
+            <h2>e-ONIGIRI英単語 UserData</h2>
+
+            <select id="resultClass">
+                <option value=""> - </option>
+                {foreach $schoolGroups as $schoolGroup name='loop'}
+                <option value="{$schoolGroup.lms_code_id}" {if $currentLmsCodeId==$schoolGroup.lms_code_id}selected{/if}>{$schoolGroup.name}</option>
+                {/foreach}
+            </select>
+
+            <br />
+            <br />
+
+            {if $records}
+            <table class="separateTable">
+                <thead>
+                <tr>
+                    <th>名前</th>
+                    <th>ニックネーム</th>
+                    <th>学校</th>
+                    <th>学年</th>
+                    <th>クラス</th>
+                    <th>学生番号</th>
+                    <th>プレースメント<br />レベル</th>
+                    <th>ポイント</th>
+                    <th>最終テスト日時</th>
+                </tr>
+                </thead>
+                <tbody>
+                {foreach $records as $record name='loop'}
+                <tr>
+                    <td>{$record.name}</td>
+                    <td>{$record.nickName}</td>
+                    <td>{$record.schoolName}</td>
+                    <td>{$record.schoolYear}</td>
+                    <td>{$record.class}</td>
+                    <td>{$record.studentNumber}</td>
+                    <td>{$record.placementLevel}</td>
+                    <td>{$record.points}</td>
+                    <td>{floor($record.lastTestTakenAt/1000)|date_format:"%G-%m-%d %T"}</td>
+                </tr>
+                {/foreach}
+                </tbody>
+            </table>
+            {else}
+            データがありません。
+            {/if}
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,306 @@
+<!doctype html>
+<html>
+<head>
+    {include file='_gtag.html'}
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex">
+    <title>テスクリホーム</title>
+
+    {include file='_favicon.html'}
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- link -->
+    <link rel="stylesheet" href="../common/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="common/style/test.css?250417">
+    <link rel="stylesheet" href="common/style/hamburger-menu.css?20230416">
+    <link href="https://fonts.googleapis.com/css?family=Cormorant+Garamond:400,400i,500,500i,600,600i,700,700i" rel="stylesheet">
+
+    <!-- script -->
+    <script src="../common/scripts/jquery-3.6.0.min.js"></script>
+    <script src="common/script/chart.min.js"></script>
+    <script src="common/script/common.js?250331"></script>
+    <script src="../common/bootstrap/js/bootstrap.min.js"></script>
+    <script src="common/script/bootbox.all.min.js"></script>
+    <script src="common/script/quiz_submission_recovery.js"></script>
+    <script>
+        $(function() {
+            $('#select_language_type').change(changeLanguageType);
+            $('#reload_button').on('click', function(){
+                location.reload();
+            });
+            
+            // 未送信の回答データがあるか確認して自動送信
+            checkPendingSubmissions();
+        });
+
+        function changeLanguageType() {
+            let languageType = $(this).val();
+
+            if (languageType < 0) {
+                $('#test_list tr').each(function() {
+                    $(this).show();
+                });
+            }
+            else {
+                $('#test_list tr').each(function() {
+                    $(this).hide();
+                });
+
+                $('#test_list tr[data-language_type="' + languageType + '"]').each(function() {
+                    $(this).show();
+                });
+            }
+        }
+
+    var grades = {$data.achievementRate};
+    
+    function testListHeight(){
+        // Cache DOM elements and measurements to reduce reflows
+        var $window = $(window);
+        var windowHeight = $window.height();
+        var $header = $("header").eq(0);
+        var $section = $("section").eq(0);
+        var headerHeight = $header.innerHeight();
+        var sectionHeight = $section.innerHeight();
+        var $testList = $(".test_list").eq(0);
+        var testListHeight = $testList.innerHeight();
+        var availableHeight = windowHeight - headerHeight - sectionHeight - 20;
+        
+        if(windowHeight > (headerHeight + sectionHeight + 20) && 
+           testListHeight + 20 > availableHeight) {
+            $("#test_list_box").css({ "height": availableHeight });
+        }
+    }
+
+    var gradesRemaining = 100 - grades;
+    $(window).ready(function(){
+        $('tr[data-href]').addClass('clickable')
+            .click(function(e) {    
+                if (!$(e.target).is('a')) {
+                    if ($(this).data('new') == 'new') {
+                        let openDate = $(this).data('open_date');
+                        let expireDate = $(this).data('expire_date');
+                        let timeLimit = $(this).data('time_limit') * 60000;
+
+                        if (IsNotOpen(openDate)) {
+                            bootbox.alert({
+                                centerVertical: true,
+                                closeButton: false,
+                                message: GetIsNotOpenText(openDate)
+                            });
+                            return;
+                        }
+
+                        let dialogMessage = GetDialogMessage(expireDate, timeLimit)
+
+                        let location = $(this).data('href');
+                        bootbox.confirm({
+                            centerVertical: true,
+                            closeButton: false,
+                            message: dialogMessage,
+                            callback: function (result) {
+                                if (result) {
+                                    window.location = location;
+                                }
+                            }
+                        });
+                    }
+                    else {
+                        window.location = $(this).data('href');
+                    }
+                }
+            });
+        testListHeight();
+        gradesTopTimer($("#grades"),grades);
+        var ctx = $("#Chart1");
+        var ctx2 = $("#Chart2");
+        var data = [grades,gradesRemaining];
+        var myChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            datasets: [{
+                data: data,
+                backgroundColor: [
+                    '#ffcc01',
+                    '#eef2f5',
+                ],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            cutout: "95%",
+           legend: { display: false },
+            responsive: true,
+            plugins:{
+                tooltip: { enabled: false }
+            }
+        }
+        });
+        var myChart = new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+            datasets: [{
+                data: data,
+                backgroundColor: [
+                    '#ffcc01',
+                    '#6f98ce'
+                ],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            cutout: "85%",
+           legend: { display: false },
+            responsive: true,
+            plugins:{
+                tooltip: { enabled: false }
+            },
+            chartArea: {
+                backgroundColor: 'rgba(230, 238, 255, 0.6)'
+            },
+        }
+        });
+    }).resize(
+        function(){
+            testListHeight();
+    });
+    
+    </script>
+</head>
+
+<body>
+    <header>
+        <article id="header_title">
+            <h1></h1>
+        </article>
+        <article id="menu">
+            <div class="hamburger-menu">
+                <input type="checkbox" id="menu-btn-check">
+                <label for="menu-btn-check" class="menu-btn"><span></span></label>
+
+                <div class="menu-content">
+                    <ul>
+                        <li>
+                            <a href="profile.php">プロフィール</a>
+                        </li>
+                        <li>
+                            <a href="add_lms_code.php">コード追加</a>
+                        </li>
+                        {if $enableLoginStudent}
+                        <li>
+                            <a href="change_password.php">パスワード変更</a>
+                        </li>
+                        {/if}
+                        {if $isApplicationForApple}
+                        <li>
+                            <a href="https://www.iizuna-shoten.com/tscreinquiry/" target="_blank">アカウント削除申請</a>
+                        </li>
+                        {/if}
+                        {if !$isApp}
+                        <li>
+                            <a href="javascript:void(0)" onclick="logout()">ログアウト</a>
+                        </li>
+                        {/if}
+                    </ul>
+                </div>
+            </div>
+        </article>
+    </header>
+    <main>
+{if empty($data.jsonQuizzes)}
+        <section>
+            <article>
+                表示できるデータがありません。
+            </article>
+        </section>
+{else}
+        <section id="header_section">
+            <article>
+                <!--メモ 学年クラス番号氏名を入れる-->
+                <p id="class_name" class="t1 center">{$studentName}</p>
+            </article>
+            <article id="grades_circle">
+                <div>
+                    <canvas id="Chart1"></canvas>
+                </div>
+                <div>
+                     <canvas id="Chart2"></canvas>
+                </div>
+                <div id="Chart3">
+                    <p>
+                        達成率<br>
+                        <span id="grades">0</span><span>%</span>
+                    </p>
+               </div>
+            </article>
+            <article>
+                <p class="test_index center">テストを選択してください</p>
+            </article>
+            <article id="select_language_box">
+                <select id="select_language_type">
+                    <option value="-1">全て</option>
+                    <option value="0">英語</option>
+                    <option value="1">国語</option>
+                    <option value="99">e-Onigiri</option>
+                </select>
+            </article>
+            <article id="reload_button">
+                <img src="common/images/icon_reload.png" />
+            </article>
+        </section>
+        <section>
+            <article id="test_list_box" class="list radius_box">
+                <table class="test_list" id="test_list">
+{foreach $data.jsonQuizzes as $quiz name='loop'}
+{if !empty($quiz.onigiri_json_quiz_id)}{assign var=is_onigiri value=true}{else}{assign var=is_onigiri value=false}{/if}
+
+{if $is_onigiri}
+    {assign var=href value="./onigiri_quiz_info.php?quiz_id={$quiz.onigiri_json_quiz_id}"}
+{else}
+    {if $quiz.is_expired || $quiz.is_result}
+        {assign var=href value="./quiz_detail.php?quiz_id={$quiz.json_quiz_id}"}
+        {assign var=new value=""}
+    {else}
+        {assign var=href value="./quiz.php?quiz_id={$quiz.json_quiz_id}"}
+        {assign var=new value="new"}
+    {/if}
+{/if}
+                    <tr data-href="{$href}" data-new="{$new}" data-open_date="{$quiz.open_date|strtotime}000" data-expire_date="{$quiz.expire_date|strtotime}000" data-time_limit="{$quiz.time_limit}" data-language_type="{$quiz.language_type}">
+                        <th class="test_list_subject">{if $quiz.language_type == 0}英語{else if $quiz.language_type == 1}国語{else if $quiz.language_type == 99}<img src="common/images/icon_e_onigiri.png" style="width: 50%" />{/if}</th>
+                        <td class="test_list_name">{$quiz.title}</td>
+                        <td class="test_list_percentage">
+    {if $is_onigiri}
+                        {if $quiz.is_result}
+                            {assign var=scoreRate value=0}
+                            {if !empty($quiz.score)}{assign var=scoreRate value="`$quiz.score / $quiz.max_score * 100`"}{/if}
+                            {if $scoreRate == 100}
+                            <span class="test_list_mark_complete">{$scoreRate}%</span><span class="arrow_r arrow_r_complete"></span>
+                            {else}
+                            <span class="test_list_mark_normal">{$scoreRate|floor}%</span><span class="arrow_r arrow_r_normal"></span>
+                            {/if}
+                        {else}
+                            <span class="test_list_mark_new">NEW</span><span class="arrow_r arrow_r_new"></span>
+                        {/if}
+    {else}
+                        {if $quiz.is_expired || $quiz.is_result}
+                            {assign var=scoreRate value=0}
+                            {if !empty($quiz.score)}{assign var=scoreRate value="`$quiz.score / $quiz.max_score * 100`"}{/if}
+                            {if $scoreRate == 100}
+                            <span class="test_list_mark_complete">{$scoreRate}%</span><span class="arrow_r arrow_r_complete"></span>
+                            {else}
+                            <span class="test_list_mark_normal">{$scoreRate|floor}%</span><span class="arrow_r arrow_r_normal"></span>
+                            {/if}
+                        {else}
+                            <span class="test_list_mark_new">NEW</span><span class="arrow_r arrow_r_new"></span>
+                        {/if}
+                        </td>
+    {/if}
+                    </tr>
+{/foreach}
+                </table>
+            </article>
+        </section>
+{/if}
+    </main>
+</body>
+</html>

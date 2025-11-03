@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    {include file='_gtag.html'}
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex">
+    <title>フォルダ管理</title>
+
+    {include file='_favicon.html'}
+
+    <link rel="stylesheet" href="../common/styles/reset.css" type="text/css">
+    <link rel="stylesheet" href="./common/styles/layout.css?20240120" type="text/css">
+    <link rel="stylesheet" href="./common/styles/folder.css" type="text/css">
+    <link rel="stylesheet" href="./common/styles/modal.css" type="text/css">
+    <script src="../common/scripts/jquery-3.6.0.min.js"></script>
+    <script src="../common/scripts/jqueryui/jquery-ui.min.js"></script>
+
+    <script type="text/javascript">
+        const teacherId = {$teacherId};
+        $(function() {
+            $("#folderForm").submit(folderRegister);
+
+            var close = $('.modal-close'),
+                container = $('.modal-container');
+
+            $('#createFolderButton').on('click', displayCreateFolder);
+            $('#deleteButton').on('click',deleteFolder);
+            $('.folderNode').on('click',displayUpdateFolder);
+
+            close.on('click', function(){
+                container.removeClass('active');
+            });
+
+            $(document).on('click', function(e) {
+                if(!$(e.target).closest('.modal-body').length) {
+                    container.removeClass('active');
+                }
+            });
+        });
+
+        function displayCreateFolder() {
+            $('#errors').html('');
+            $('.modal-container').addClass('active');
+            $('#deleteButton').hide();
+            $('.buttonArea').show();
+
+            $('#folderId').val('');
+            $('#folderName').val('');
+            $('#parentFolder').val(0);
+            $('#submitButton').val('作成')
+
+            $('#folderName').attr('disabled', false);
+            $('#parentFolder').attr('disabled', false);
+            return false;
+        }
+
+        function displayUpdateFolder() {
+            $('#errors').html('');
+            let id = $(this).data('id');
+            let parentFolderId = $(this).data('parent_folder_id');
+            let ownerTeacherId = $(this).data('teacher_id');
+            let folderName = $(this).html();
+
+            let isMine = teacherId == ownerTeacherId;
+
+            $('.modal-container').addClass('active');
+
+            if (isMine) {
+                $('.buttonArea').show();
+                $('#deleteButton').show();
+            }
+            else {
+                $('.buttonArea').hide();
+            }
+
+            $('#folderName').attr('disabled', !isMine);
+            $('#parentFolder').attr('disabled', !isMine);
+
+            $('#folderId').val(id);
+            $('#folderName').val(folderName);
+            $('#parentFolder').val(parentFolderId);
+            $('#submitButton').val('更新')
+            return false;
+        }
+
+        function folderRegister() {
+            $('#errors').html('');
+
+            let folderName = $("#folderName").val();
+
+            if (folderName == "") {
+                $('#errors').html('フォルダ名を入力してください。');
+                return false;
+            }
+
+            let form = $("#folderForm");
+
+            $.ajax({
+                url: 'quiz_folder_register.php',
+                type: 'post',
+                data: form.serialize(),
+                timeout: 30000,
+
+            })
+            .done(function(result) {
+                if (result.result =='OK')
+                {
+                    alert('登録しました。');
+                    location.reload();
+                    return;
+                } else if (result.error != null)
+                {
+                    $('#errors').html(result.error['message'] + ' (' + result.error['code'] + ')');
+                    return;
+                }
+                else
+                {
+                    alert('エラーが発生しました。');
+                    return;
+                }
+            })
+            .fail(function(result) {
+                alert('エラーが発生しました。');
+                return;
+            });
+
+            return false;
+        }
+
+        function deleteFolder() {
+            let folderId = $('#folderId').val();
+            let folderName = $('#folderName').val();
+
+            var message = "「" + folderName + "」を削除します。\nよろしいですか？\n\n※このフォルダの下にテストがある場合、そのテストはルートフォルダに移動します。";
+
+            if (confirm(message)) {
+                $.ajax({
+                    url: 'quiz_folder_delete.php',
+                    type: 'post',
+                    data: { 'folder_id': folderId, '_csrf': '{$csrf}' },
+                    async : false,
+                    timeout: 30000,
+                })
+                .done(function(result) {
+                    if (result.error != null)
+                    {
+                        alert(result.error.message);
+                    }
+                    else if(result.result == 'OK')
+                    {
+                        alert('削除しました');
+                        location.reload();
+                    }
+                    else
+                    {
+                        alert('予期せぬエラーが発生しました');
+                    }
+                })
+                .fail(function(result) {
+                    alert('予期せぬエラーが発生しました');
+                });
+            }
+        }
+    </script>
+</head>
+<body>
+<div id="container">
+    <div id="menuArea">
+        <div id="logoArea">
+            <img src="common/images/logo.png" alt="Test Creator LMS" />
+        </div>
+{include file='_side_menu.html' isJuku=$isJuku current='index'}
+    </div>
+
+    <div id="contentArea">
+        <h2>フォルダ管理</h2>
+
+        <button class="normalButton middle" id="createFolderButton">新規作成</button>　
+        <button class="normalButton middle" onclick="location.href='quiz_folder_bulk_move.php'">テスト一括移動</button>
+
+        <div class="modal-container">
+            <div class="modal-body">
+                <div class="modal-close">×</div>
+                <div class="modal-content">
+                    <form method="post" action="" id="folderForm">
+                        <input type="hidden" name="_csrf" value="{$csrf}" />
+                        <input type="hidden" name="id" value="" id="folderId" />
+                        <table>
+                            <tbody>
+                            <tr>
+                                <td>フォルダ名</td>
+                                <td style="padding-left: 15px"><input type="text" name="name" id="folderName" /></td>
+                            </tr>
+                            <tr>
+                                <td>親フォルダ</td>
+                                <td style="padding-left: 15px">
+                                    <select name="parent_folder_id" id="parentFolder">
+                                        {$folderListOptions}
+                                    </select>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                        <div id="errors" class="caution"></div>
+
+                        <div class="buttonArea">
+                            <input type="submit" value="作成" class="normalButton middle" id="submitButton" />　
+                            <button type="button" class="normalButton middle delete" id="deleteButton">削除</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div id="folderList">
+            <h2>フォルダ一覧</h2>
+            {$folderListHtml}
+        </div>
+    </div>
+</div>
+</body>
+</html>

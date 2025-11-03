@@ -1,0 +1,736 @@
+<!doctype html>
+<html lang="ja">
+<head>
+    {include file='_gtag.html'}
+    <meta charset="utf-8">
+    <meta name="robots" content="noindex">
+    <title>Test Creator - iizunaLMS</title>
+
+    {include file='_favicon.html'}
+
+    <link rel="stylesheet" type="text/css" href="../common/styles/quiz.css">
+    <link rel="stylesheet" type="text/css" href="../common/jstree/themes/default/style.css" />
+    <script src="../common/scripts/jquery-3.6.0.min.js"></script>
+    <script src="../common/scripts/quiz.js?20241006"></script>
+    <script src="../common/scripts/section_selector.js?20231123"></script>
+    <script src="../common/scripts/midasi_selector.js?20231123"></script>
+    <script src="../common/scripts/manual_mode.js?20250608"></script>
+    <script src="../common/jstree/jstree.min.js"></script>
+
+    <!-- flatpickr -->
+    <link rel="stylesheet" type="text/css" href="../common/flatpickr/flatpickr.min.css" />
+    <script src="../common/flatpickr/flatpickr.min.js"></script>
+    <script src="../common/flatpickr/l10n/ja.js"></script>
+
+    <script type="text/javascript">
+        let bookData = {$bookData}
+        var quizOption = {
+            rangeType: "page",
+            sectionNumbers: [],
+            midasiNumbers: {},
+            manual: {
+                syubetuNumbers: [],
+                changeDisplayType: 0,
+                frequencies: [],
+                individualSelected: {},
+                selectedShomonnos: []
+            }
+        }
+        $(function() {
+            $(".period").flatpickr({
+                'locale' : 'ja',
+                'dateFormat' : 'Y-m-d H:i',
+                enableTime  : true
+            });
+            $("#copyButton").on('click', copyQuiz);
+            $("#createSameScopeButton").on('click', createSameScope);
+        });
+
+        function copyQuiz() {
+            copyOrSameScope(true);
+        }
+
+        function createSameScope() {
+            copyOrSameScope(false);
+        }
+
+        function copyOrSameScope(isCopy) {
+            let url = isCopy ? 'quiz_copy.php' : 'quiz_create_same_scope.php';
+            let copyTitle = $("#copyTitle").val();
+
+            $("#errorCopyTitle").hide();
+            $("#errorCopyDate").hide();
+
+            if (copyTitle =="") {
+                $("#errorCopyTitle").show();
+                return false;
+            }
+
+            let openDateValue = $("#copyOpenDate").val();
+            let expireDateValue = $("#copyExpireDate").val();
+            if (openDateValue != "" && expireDateValue != "") {
+                const openDate = new Date(openDateValue);
+                const expireDate = new Date(expireDateValue);
+
+                if (openDate >= expireDate) {
+                    $("#errorCopyDate").show();
+                    return false;
+                }
+            }
+            
+            let form = $("#copyForm");
+
+            $.ajax({
+                url: url,
+                type: 'post',
+                data: form.serialize(),
+                timeout: 30000,
+            })
+                .done(function(result) {
+                    if (result.result =='OK')
+                    {
+                        alert('作成しました。');
+                        window.location.href = './index.php';
+                        return;
+                    } else if (result.error != null)
+                    {
+                        $('#errors').html(result.error['message'] + ' (' + result.error['code'] + ')');
+                        return;
+                    }
+                    else
+                    {
+                        alert('エラーが発生しました。');
+                        return;
+                    }
+                })
+                .fail(function(result) {
+                    alert('エラーが発生しました。');
+                    return;
+                });
+
+            return false;
+        }
+
+        function moveFolder() {
+            let parentFolderId = $("#parentFolder").val();
+
+            let formData = {
+                'quiz_id': '{$quizId}',
+                'parent_folder_id': parentFolderId,
+                '_csrf': '{$csrf}'
+            }
+
+            $.ajax({
+                url: 'quiz_folder_move.php',
+                type: 'post',
+                data: formData,
+                timeout: 30000,
+            })
+                .done(function (result) {
+                    if (result.error != null) {
+                        alert(result.error.message);
+                    } else if (result.result == 'OK') {
+                        alert('フォルダ移動しました');
+                        location.reload();
+                    } else {
+                        alert('予期せぬエラーが発生しました');
+                    }
+                })
+                .fail(function (result) {
+                    alert('予期せぬエラーが発生しました');
+                });
+        }
+    </script>
+    {if $isUpdate}
+    <script type="text/javascript">
+        $(function() {
+            $('#moveFolderButton').on('click', moveFolder);
+        });
+    </script>
+    {/if}
+    {if is_array($jsonQuizOption)}
+    <script type="text/javascript">
+        quizOption.rangeType = "{$jsonQuizOption.range_type}";
+        quizOption.sectionNumbers = {$jsonQuizOption.section_numbers_json};
+        quizOption.midasiNumbers = {$jsonQuizOption.midasi_numbers_json};
+
+        quizOption.manual.syubetuNumbers = {$jsonQuizOption.manual_syubetu_numbers_json};
+        quizOption.manual.changeDisplayType = {$jsonQuizOption.manual_change_display};
+        quizOption.manual.frequencies = {$jsonQuizOption.manual_frequencies_json};
+        quizOption.manual.individualSelected = {$jsonQuizOption.manual_individual_selected_json};
+        quizOption.manual.selectedShomonnos = {$jsonQuizOption.manual_selected_shomonnos};
+    </script>
+{/if}
+</head>
+<body>
+<div id="contents">
+    <div id="header">
+        <img src="../common/images/iizunalogo.png" alt="iizunalogo" width="" height="50px" >
+    </div>
+
+    <form method="post" action="quiz_create_test.php" id="testCreator">
+        <h2>フォルダ</h2>
+        {if $notEditable && $isOtherTeacher}
+        {$currentFolder.name}
+        {else}
+        <select name="parent_folder_id" id="parentFolder" style="margin-bottom: 50px;">
+            {$folderListOptions}
+        </select>
+        {if $isUpdate}<button type="button" id="moveFolderButton">フォルダ移動</button>{/if}
+        {/if}
+
+        <h2>タイトル</h2>
+        {if $notEditable}
+        {$jsonQuiz.title}
+        {else}
+        <div style="width: 100%; margin-bottom: 50px;">
+            <input type="text" name="title" value="{if !empty($jsonQuiz)}{$jsonQuiz.title}{/if}" id="title" style="width: 600px;" />
+            <div class="error hidden" id="errorTitle">タイトルを入力してください。</div>
+        </div>
+        {/if}
+
+        <h2>期間</h2>
+        {if $notEditable}
+        {$jsonQuiz.open_date} ～ {$jsonQuiz.expire_date}
+        {else}
+        <div style="width: 100%; margin-bottom: 50px;">
+            <input type="text" name="open_date" value="{if isset($jsonQuiz.open_date)}{$jsonQuiz.open_date}{/if}" style="width: 130px;" class="period" id="openDate" /> ～
+            <input type="text" name="expire_date" value="{if isset($jsonQuiz.expire_date)}{$jsonQuiz.expire_date}{/if}" style="width: 130px;" class="period" id="expireDate" />
+            <div class="error hidden" id="errorDate">期間を正しく設定してください。</div>
+        </div>
+        {/if}
+
+        <h2>制限時間</h2>
+{if $notEditable}
+        <p>{if !empty($jsonQuiz)}{if $jsonQuiz.time_limit == 0}なし{else}{$jsonQuiz.time_limit}分{/if}{else}なし{/if}</p>
+{else}
+        <select name="time_limit" style="width: 100px">
+{for $value=0 to 30}
+{if $value == 0}
+    {assign var=time_limit_label value="なし"}
+{else}
+    {assign var=time_limit_label value="`$value`分"}
+{/if}
+            <option value="{$value}" {if !empty($jsonQuiz) && $jsonQuiz.time_limit == $value}selected{/if}>{$time_limit_label}</option>
+{/for}
+        </select>
+{/if}
+{assign var=mode value=0}
+{if is_array($jsonQuizOption)}
+    {assign var=mode value=$jsonQuizOption['mode']}
+{/if}
+
+        {if $notEditable}
+        {if $isAnswered}<p class="error">このテストはすでに回答者がいるため変更できません。</p>
+        {elseif $isOtherTeacher}<p class="error">このテストは他の先生が作成したため変更できません。</p>{/if}
+        <table class="table table-bordered">
+            <tbody>
+            <tr>
+                <th>モード</th>
+                <td>{if $mode == 0}おまかせモード{else}マニュアルモード{/if}</td>
+            </tr>
+            <tr>
+                <th>英語 / 国語</th>
+                <td>{if $isEnglishBookSelect}英語{else}国語{/if}</td>
+            </tr>
+            <tr>
+                <th>書籍</th>
+                <td>{$currentBookData.name}</td>
+            </tr>
+            <tr>
+                <th>出題の範囲</th>
+                <td>
+{if is_array($jsonQuizOption)}
+                    {if $jsonQuizOption.range_type == "questionNo"}問題番号で指定する<br />
+                    {for $i=0 to 9}
+                        {assign var=value_0 value=""}
+                        {assign var=value_1 value=""}
+                        {if isset($jsonQuizOption.question_number_ranges[$i]) && is_array($jsonQuizOption.question_number_ranges[$i])}
+                            {assign var=value_0 value=$jsonQuizOption.question_number_ranges[$i][0]}
+                            {if isset($jsonQuizOption.question_number_ranges[$i][1])}{assign var=value_1 value=$jsonQuizOption.question_number_ranges[$i][1]}{/if}
+                        {/if}
+                        {if $value_0 != "" || $value_1 != ""}
+                            　{$value_0}～{$value_1}<br />
+                        {/if}
+                    {/for}
+
+                    {elseif $jsonQuizOption.range_type == "chapter"}章・節で指定する<br />
+                    {foreach $currentChapterData as $chapter name='loop'}
+                        {if !isset($chapter["children"])}{$chapter.text}<br />
+                        {else}
+                            　{$chapter.text}<br />
+                            {foreach $chapter["children"] as $section name='loopChild'}
+                                　　{$section.text}<br />
+                            {/foreach}
+                        {/if}
+                    {/foreach}
+
+                    {elseif $jsonQuizOption.range_type == "midasiNo"}見出し語番号で指定する<br />
+                    {for $i=0 to 9}
+                        {assign var=value_0 value=""}
+                        {assign var=value_1 value=""}
+                        {if isset($jsonQuizOption.midasi_number_ranges[$i]) && is_array($jsonQuizOption.midasi_number_ranges[$i])}
+                            {assign var=value_0 value=$jsonQuizOption.midasi_number_ranges[$i][0]}
+                            {if isset($jsonQuizOption.midasi_number_ranges[$i][1])}{assign var=value_1 value=$jsonQuizOption.midasi_number_ranges[$i][1]}{/if}
+                        {/if}
+                        {if $value_0 != "" || $value_1 != ""}
+                            　{$value_0}～{$value_1}<br />
+                        {/if}
+                    {/for}
+
+                    {elseif $jsonQuizOption.range_type == "midasi"}見出し語を個別に指定する<br />
+                    {foreach $currentMidasiData as $midasi name='loop'}
+                        　{$midasi.text}<br />
+                    {/foreach}
+
+                    {else}ページ番号で指定する<br />
+                    {for $i=0 to 9}
+                        {assign var=value_0 value=""}
+                        {assign var=value_1 value=""}
+                        {if isset($jsonQuizOption.page_ranges[$i]) && is_array($jsonQuizOption.page_ranges[$i])}
+                            {assign var=value_0 value=$jsonQuizOption.page_ranges[$i][0]}
+                            {if isset($jsonQuizOption.page_ranges[$i][1])}{assign var=value_1 value=$jsonQuizOption.page_ranges[$i][1]}{/if}
+                        {/if}
+                        {if $value_0 != "" || $value_1 != ""}
+                            　{$value_0}～{$value_1} ページ<br />
+                        {/if}
+                    {/for}
+                    {/if}
+{else}
+（このテストは確認することができません。）
+{/if}
+                </td>
+            </tr>
+            <tr>
+                <th>出題順</th>
+                <td>
+                {if is_array($jsonQuizOption)}
+                    {if $jsonQuizOption['sort'] == 1}収録順{else}ランダム{/if}
+                {else}
+                    （このテストは確認することができません。）
+                {/if}
+                </td>
+            </tr>
+{if $mode == 1}
+{* ------------------- マニュアルモード ---------------------- *}
+            <tr>
+                <th>問題を個別に選択</th>
+                <td>
+                    {if $jsonQuizOption["manual_is_individual"] == 1}する{else}しない{/if}
+                </td>
+            </tr>
+            <tr>
+                <th>表示切替</th>
+                <td>
+                    {if $jsonQuizOption.manual_change_display == 1 }問題形式 > レベルで表示
+                    {elseif $jsonQuizOption.manual_change_display == 2 }レベル > 問題形式で表示
+                    {else}指定なし
+                    {/if}
+                </td>
+            </tr>
+            <tr>
+                <th>出題頻度</th>
+                <td>
+                {if empty($currentFrequencyData)}指定なし
+                {else}
+                    {foreach $currentFrequencyData as $data name='loop'}
+                    {$data.NAME}<br />
+                    {/foreach}
+                {/if}
+                </td>
+            </tr>
+            <tr>
+                <th>テストの内容</th>
+                <td>
+                {assign var=currentHead value=""}
+                {assign var=showHeadFlag value=0}
+                {foreach $currentQuestTypeData as $data name='loop'}
+                    {assign var=myName value=$data.NAME}
+                    {assign var=myId value="syubetu_num_`$data.SYUBETUNO`"}
+                    {assign var=mySyubetuNo value=$data.SYUBETUNO}
+                    {assign var=myLevelNo value=""}
+
+                    {* 表示切替が有効な場合は問題形式・レベルのいずれかを見出しの様に扱う *}
+                    {if $jsonQuizOption.manual_change_display != 0 }
+                        {if $jsonQuizOption.manual_change_display == 1 }{assign var=myHead value=$data.NAME}
+                        {else}{assign var=myHead value=$data.LEVEL}
+                        {/if}
+
+                        {* 現在値と異なる場合は見出しを追加する *}
+                        {if $currentHead != $myHead}
+                            {assign var=currentHead value=$myHead}
+                            {assign var=showHeadFlag value=1}
+                        {/if}
+
+                        {* myName値を切り替え *}
+                        {if $jsonQuizOption.manual_change_display == 1 }
+                            {assign var=myName value="　`$data.LEVEL`"}
+                        {elseif $jsonQuizOption.manual_change_display == 2 }
+                            {assign var=myName value="　`$data.NAME`"}
+                        {/if}
+
+                        {* myIdをSYUBETUNOとLEVELNOの組み合わせに変更 *}
+                        {assign var=myId value="syubetu_num_`$data.SYUBETUNO`_`$data.LEVELNO`"}
+
+
+                    {/if}
+
+                    {assign var=tmpSyubetuNo value=$myId|replace:"syubetu_num_":""}
+                    {if isset($jsonQuizOption.manual_syubetu_numbers_map[$tmpSyubetuNo])}
+                        {if $showHeadFlag == 1}
+                            {assign var=showHeadFlag value=0}
+                            <div style="font-weight: bold">{$myHead}</div>
+                        {/if}
+                        {$myName}：{$jsonQuizOption.manual_syubetu_numbers_map[$tmpSyubetuNo]}<br />
+
+                        {if $jsonQuizOption["manual_is_individual"] == 1}
+                            {if !isset($currentSyomonDataMap[$tmpSyubetuNo])}指定なし
+                            {else}
+                                <ul>
+                                {foreach $currentSyomonDataMap[$tmpSyubetuNo] as $data name='loop'}
+                                    <li style="font-weight: normal">{$data.BUN}</li>
+                                {/foreach}
+                                </ul>
+                            {/if}
+                        {/if}
+                    {/if}
+                {/foreach}
+                </td>
+            </tr>
+{* ------------------- /マニュアルモード ---------------------- *}
+{/if}
+{if $currentBookData.question_no_flg > 0}
+            <tr>
+                <th>問題文に問題番号を表示</th>
+                <td>
+                {if is_array($jsonQuizOption)}
+                    {if $jsonQuizOption.is_show_question_no == 1}表示する{else}表示しない{/if}
+                {else}
+                    （このテストは確認することができません。）
+                {/if}
+                </td>
+            </tr>
+{/if}
+{if $currentBookData.midasi_no_flg > 0}
+            <tr>
+                <th>問題文に見出し語番号を表示</th>
+                <td>
+                {if is_array($jsonQuizOption)}
+                    {if $jsonQuizOption.is_show_midasi_no == 1}表示する{else}表示しない{/if}
+                {else}
+                    （このテストは確認することができません。）
+                {/if}
+                </td>
+            </tr>
+{/if}
+            <tr>
+                <th>TOTAL問題数</th>
+                <td>{$total} 問</td>
+            </tr>
+            </tbody>
+        </table>
+        {else}
+        <div id="readymadeoromakase">
+
+            <input type="radio" name="mode" id="omakaseon" class="radio_input" value="0" {if $mode == 0}checked{/if}>
+            <label for="omakaseon" class="radio_label">おまかせモード</label>
+            <input type="radio" name="mode" id="manualon" class="radio_input" value="1" {if $mode == 1}checked{/if}>
+            <label for="manualon" class="radio_label">マニュアルモード</label>
+
+            <div id="omakase">
+                <h2 id="omakaseTitle">おまかせテスト作成</h2>
+                <h2 id="manualTitle">マニュアルテスト作成</h2>
+                <input type="hidden" name="sectionNos" id="sectionNos" value="{if is_array($jsonQuizOption)}{$jsonQuizOption.section_numbers}{/if}" />
+                <input type="hidden" name="midasiNos" id="midasiNos" value="{if is_array($jsonQuizOption)}{$jsonQuizOption.midasi_numbers}{/if}" />
+                <input type="hidden" name="syomonNos" id="syomonNos" />
+                <input type="hidden" name="individualSelected" id="individualSelected" />
+                <input type="hidden" name="manualMode" id="manualMode" value="0" />
+                <input type="hidden" name="quiz_id" value="{$quizId}">
+                <input type="hidden" name="titleNo" id="selectBook" />
+                <input type="hidden" name="isShuffle" value="{$isShuffle}" />
+                <input type="radio" name="selectBookType" id="selectBookType_0" value="0" {if  $isEnglishBookSelect}checked="checked"{/if}><label for="selectBookType_0"> 英語</label>
+                <input type="radio" name="selectBookType" id="selectBookType_1" value="1" {if !$isEnglishBookSelect}checked="checked"{/if}><label for="selectBookType_1"> 国語</label>
+                <br>
+
+                書籍の選択
+                <select name="selectBook_0" id="selectBook_0">
+                    {if count($bookList[0]) > 0}
+                    <option value="">- 書籍を選択してください -</option>
+                    {foreach $bookList[0] as $book name='loop'}
+                    <option value="{$book.title_no}" {if $titleNo==$book.title_no}selected{/if}>{$book.name}</option>
+                    {/foreach}
+                    {else}
+                    <option value="">書籍を持っていません。</option>
+                    {/if}
+                </select>
+                <select name="selectBook_1" id="selectBook_1" class="hidden">
+                    {if count($bookList[1]) > 0}
+                    <option value="">- 書籍を選択してください -</option>
+                    {foreach $bookList[1] as $book name='loop'}
+                    <option value="{$book.title_no}" {if $titleNo==$book.title_no}selected{/if}>{$book.name}</option>
+                    {/foreach}
+                    {else}
+                    <option value="">書籍を持っていません。</option>
+                    {/if}
+                </select>
+                <br />
+                <div id="conditions">
+                    出題の範囲
+                    <select name="rangeType" id="selectRange">
+                        <option value="page"> - </option>
+                    </select>
+
+                    <div id="pageCondition">
+                        <table class="select_waku">
+                            {for $i=0 to 9}
+{assign var=value_0 value=""}
+{assign var=value_1 value=""}
+{if is_array($jsonQuizOption) && isset($jsonQuizOption.page_ranges[$i]) && is_array($jsonQuizOption.page_ranges[$i])}
+    {assign var=value_0 value=$jsonQuizOption.page_ranges[$i][0]}
+    {if isset($jsonQuizOption.page_ranges[$i][1])}{assign var=value_1 value=$jsonQuizOption.page_ranges[$i][1]}{/if}
+{/if}
+                            <tr{if $i != 0} class="conditionSubRangeRow"{/if}>
+                            <td>　　　　　　</td>
+                            <td><input type="number" name="page_from_{$i+1}" id="page_from_{$i+1}" class="pageConditions" value="{$value_0}" {if !is_array($jsonQuizOption)}disabled{/if}></td>
+                            <td>～</td>
+                            <td><input type="number" name="page_to_{$i+1}" id="page_to_{$i+1}" class="pageConditions" value="{$value_1}" {if !is_array($jsonQuizOption)}disabled{/if}></td>
+                            <td>ページ</td>
+                            <td>{if $i == 0}<input type="button" value="範囲の追加" class="toggleConditionSubRangeRow" />{/if}</td>
+                            </tr>
+                            {/for}
+
+                            <tr>
+                                <td>選択可能範囲</td>
+                                <td class="center"><span id="pageMin">0</span></td>
+                                <td>～</td>
+                                <td class="center"><span id="pageMax">0</span></td>
+                                <td>ページ</td>
+                                <td></td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div id="numberCondition">
+                        <table class="select_waku">
+                            {for $i=0 to 9}
+{assign var=value_0 value=""}
+{assign var=value_1 value=""}
+{if is_array($jsonQuizOption) && isset($jsonQuizOption.question_number_ranges[$i]) && is_array($jsonQuizOption.question_number_ranges[$i])}
+    {assign var=value_0 value=$jsonQuizOption.question_number_ranges[$i][0]}
+    {if isset($jsonQuizOption.question_number_ranges[$i][1])}{assign var=value_1 value=$jsonQuizOption.question_number_ranges[$i][1]}{/if}
+{/if}
+                            <tr{if $i != 0} class="conditionSubRangeRow"{/if}>
+                            <td>　　　　　　</td>
+                            <td><input type="number" name="number_from_{$i+1}" id="number_from_{$i+1}" class="numberConditions" value="{$value_0}"></td>
+                            <td>～</td>
+                            <td><input type="number" name="number_to_{$i+1}" id="number_to_{$i+1}" class="numberConditions" value="{$value_1}"></td>
+                            <td>{if $i == 0}<input type="button" value="範囲の追加" class="toggleConditionSubRangeRow" />{/if}</td>
+                            </tr>
+                            {/for}
+                            <tr>
+                                <td>選択可能範囲</td>
+                                <td class="center"><span id="questionNoMin">0</span></td>
+                                <td>～</td>
+                                <td class="center"><span id="questionNoMax">0</span></td>
+                                <td></td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div id="midasiNumberCondition">
+                        <table class="select_waku">
+                            {for $i=0 to 9}
+{assign var=value_0 value=""}
+{assign var=value_1 value=""}
+{if is_array($jsonQuizOption) && isset($jsonQuizOption.midasi_number_ranges[$i]) && is_array($jsonQuizOption.midasi_number_ranges[$i])}
+    {assign var=value_0 value=$jsonQuizOption.midasi_number_ranges[$i][0]}
+    {if isset($jsonQuizOption.midasi_number_ranges[$i][1])}{assign var=value_1 value=$jsonQuizOption.midasi_number_ranges[$i][1]}{/if}
+{/if}
+                            <tr{if $i != 0} class="conditionSubRangeRow"{/if}>
+                            <td>　　　　　　</td>
+                            <td><input type="number" name="midasi_number_from_{$i+1}" id="midasi_number_from_{$i+1}" class="midasiNumberConditions" value="{$value_0}"></td>
+                            <td>～</td>
+                            <td><input type="number" name="midasi_number_to_{$i+1}" id="midasi_number_to_{$i+1}" class="midasiNumberConditions" value="{$value_1}"></td>
+                            <td>{if $i == 0}<input type="button" value="範囲の追加" class="toggleConditionSubRangeRow" />{/if}</td>
+                            </tr>
+                            {/for}
+                            <tr>
+                                <td>選択可能範囲</td>
+                                <td class="center"><span id="midasiNoMin">0</span></td>
+                                <td>～</td>
+                                <td class="center"><span id="midasiNoMax">0</span></td>
+                                <td></td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div id="chapterCondition"></div>
+                    <div id="midasiCondition"></div>
+
+                    <div>
+                        出題順:
+{assign var=sort value=0}
+{if is_array($jsonQuizOption)}
+    {assign var=sort value=$jsonQuizOption['sort']}
+{/if}
+                        <input type="radio" name="sort" value="random" id="sortRandom" {if $sort==0}checked{/if} /> <label for="sortRandom">ランダム</label>
+                        <input type="radio" name="sort" value="asc" id="sortAsc" {if $sort==1}checked{/if} /> <label for="sortAsc">収録順</label>
+                    </div>
+                    <br />
+
+                    <div id="manual">
+                        <hr />
+{assign var=selectIndividualSelected value=""}
+{if is_array($jsonQuizOption) && $jsonQuizOption["manual_is_individual"] == 1}
+    {assign var=selectIndividualSelected value="checked"}
+{/if}
+                        テストの内容　　　
+                        <input type="checkbox" name="selectIndividual" id="selectIndividual" value="1" {$selectIndividualSelected} /><label for="selectIndividual"> 問題を個別に選択</label>
+                        <span id="changeDisplayButtonWrapper">　<input type="button" id="changeDisplayButton" value="表示切替" /></span>
+                        <span id="frequencyButtonWrapper">　<input type="button" id="frequencyButton" value="出題頻度" /></span>
+                        <table id="questionType">
+                            <tr>
+                                <th>問題の形式</th>
+                                <th>最大問題数</th>
+                                <th>今回の出題数</th>
+                                <th>個別選択</th>
+                            </tr>
+                        </table>
+
+                        <div id="tooltipBg"></div>
+{assign var=changeDisplay value=0}
+{if is_array($jsonQuizOption)}
+    {assign var=changeDisplay value=$jsonQuizOption['manual_change_display']}
+{/if}
+                        <div id="changeDisplayTooltipContent">
+                            <input type="checkbox" name="changeDisplay" value="1" id="changeDisplaySyubetuno" class="changeDisplay" {if $changeDisplay==1}checked{/if}><label for="changeDisplaySyubetuno"> 問題形式 > レベルで表示</label><br />
+                            <input type="checkbox" name="changeDisplay" value="2" id="changeDisplayLevel" class="changeDisplay" {if $changeDisplay==2}checked{/if}><label for="changeDisplayLevel"> レベル > 問題形式で表示</label>
+                        </div>
+
+                        <div id="frequencyTooltipContent">
+                            <input type="checkbox"> 問題形式 > レベルで表示<br />
+                            <input type="checkbox"> レベル > 問題形式で表示
+                        </div>
+
+                        <hr />
+                    </div>
+                    <div id="modalWindow">
+                        <div id="modalBg"></div>
+                        <div id="modalContent">
+                            <div class="header">出題する問題にチェックを付けてOKボタンをクリックして下さい</div>
+                            <div id="individualTable"></div>
+                            <div class="footer">
+                                <div class="boxContainer">
+                                    <div id="individualSelectNum" class="box"></div>
+                                    <div class="box">
+                                        マークの説明<br />
+                                        <span id="midasiDescription"><img src="../common/images/icon_same_midashi.png" alt="同じ見出し語"> 同じ見出し語の問題が選択されています<br /></span>
+                                        <img src="../common/images/icon_cannot_be_together.png" alt="同時に出題できない問題"> 同時に 出題できない問題が選択されています
+                                    </div>
+                                </div>
+                                <div class="buttonArea">
+                                    <input type="button" value="OK" id="individualButtonOK" />　
+                                    <input type="button" value="キャンセル" id="individualButtonCancel" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="showQuestionNoContainer">
+{assign var=showQuestionNoSelected value=""}
+{if is_array($jsonQuizOption) && $jsonQuizOption["is_show_question_no"] == 1}
+    {assign var=showQuestionNoSelected value="checked"}
+{/if}
+                        <input type="checkbox" name="showQuestionNo" id="showQuestionNo" value="1" {$showQuestionNoSelected} /> <label for="showQuestionNo">問題文に問題番号を表示</label><br />
+                    </div>
+                    <div id="showMidasiNoContainer">
+{assign var=showMidasiNoChecked value=""}
+{if is_array($jsonQuizOption) && $jsonQuizOption["is_show_midasi_no"] == 1}
+    {assign var=showMidasiNoChecked value="checked"}
+{/if}
+                        <input type="checkbox" name="showMidasiNo" id="showMidasiNo" value="1" {$showMidasiNoChecked} /> <label for="showMidasiNo">問題文に見出し語番号を表示</label><br />
+                    </div>
+
+                    <br />
+                    <div>
+                        TOTAL問題数： <input type="number" name="total" id="totalNum" value="{$total}" style="width: 50px" /> 問<br />
+                        <div class="error hidden" id="errorTotal">TOTALは1～400の数字で入力してください。</div>
+                    </div>
+                    <br />
+                    <br />
+                    {if $isUpdate == false}
+                    <div>
+                        テスト作成数： <input type="number" name="testNum" id="testNum" value="1" style="width: 50px" /><br />
+                        <div class="error hidden" id="errorTestNum">テスト作成数は1～10の数字で入力してください。</div>
+                    </div>
+                    <br />
+                    <br />
+                    {/if}
+                    <input type="submit" value="テスト{if $isUpdate}更新{else}作成{/if}" id="createButton" disabled />
+                    <img src="../common/images/loading.gif" id="loading" />
+                </div>
+            </div>
+        </div>
+        {/if}
+    </form>
+    <div class="hidden">
+        <form method="post" action="quiz_chapter.php" id="chapterForm">
+            <input type="text" name="titleNo" id="chapterTitleNo">
+            <input type="submit" value="submit">
+        </form>
+
+        <form method="post" action="quiz_midasi.php" id="midasiForm">
+            <input type="text" name="titleNo" id="midasiTitleNo">
+            <input type="submit" value="submit">
+        </form>
+    </div>
+
+{if $isUpdate}
+    <hr />
+    <form method="post" action="" id="copyForm">
+        <input type="hidden" name="_csrf" value="{$csrf}" />
+        <input type="hidden" name="quiz_id" value="{$quizId}" />
+        <h2>テストの複製</h2>
+
+    {if $enableCopy}
+        {if is_array($jsonQuizOption)}
+        <table>
+            <tr>
+                <td style="width: 80px">タイトル</td>
+                <td>
+                    <input type="text" name="title" value="{$jsonQuiz.title}" id="copyTitle" style="width: 600px;" />
+                    <div class="error hidden" id="errorCopyTitle">タイトルを入力してください。</div>
+                </td>
+            </tr>
+            <tr>
+                <td>期間</td>
+                <td>
+                    <div>
+                        <input type="text" name="open_date" value="{if isset($jsonQuiz.open_date)}{$jsonQuiz.open_date}{/if}" style="width: 130px;" class="period" id="copyOpenDate" /> ～
+                        <input type="text" name="expire_date" value="{if isset($jsonQuiz.expire_date)}{$jsonQuiz.expire_date}{/if}" style="width: 130px;" class="period" id="copyExpireDate" />
+                        <div class="error hidden" id="errorCopyDate">期間を正しく設定してください。</div>
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        <div class="buttonArea">
+            <button type="button" id="copyButton">テストを複製する</button>　
+            <button type="button" id="createSameScopeButton">同じテスト範囲で作成</button>
+        </div>
+        {else}
+        <p class="error">このテストでは使用できません。</p>
+        {/if}
+    {else}
+        <p class="error">このテストの書籍は所持していない為、使用できません。</p>
+    {/if}
+    </form>
+{/if}
+    <hr />
+    <div style="margin: 30px 0 40px;">
+        <a href="./">一覧へ</a>
+    </div>
+</div>
+
+</body>
+</html>

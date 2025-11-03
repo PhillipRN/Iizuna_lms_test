@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    {include file='_gtag.html'}
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex">
+    <title>おにぎり英単語用テスト作成</title>
+
+    {include file='_favicon.html'}
+
+    <link rel="stylesheet" href="../common/styles/reset.css" type="text/css">
+    <link rel="stylesheet" href="./common/styles/layout.css?20240120" type="text/css">
+    <link rel="stylesheet" href="./common/styles/onigiri_quiz.css" type="text/css">
+    <link rel="stylesheet" href="./common/styles/scroll_box.css" type="text/css">
+    <link rel="stylesheet" href="../common/tablesorter/css/theme.default.min.css" type="text/css">
+    <link rel="stylesheet" href="./common/styles/folder.css" type="text/css">
+    <link rel="stylesheet" href="./common/styles/modal.css" type="text/css">
+    <script src="./common/scripts/onigiri_preview.js"></script>
+    <script src="../common/scripts/jquery-3.6.0.min.js"></script>
+    <script src="../common/tablesorter/js/jquery.tablesorter.min.js"></script>
+
+    <!-- flatpickr -->
+    <link rel="stylesheet" type="text/css" href="../common/flatpickr/flatpickr.min.css" />
+    <script src="../common/flatpickr/flatpickr.min.js"></script>
+    <script src="../common/flatpickr/l10n/ja.js"></script>
+
+    <script type="text/javascript">
+        $(function() {
+            $('#checkAll').on('click', toggleAllCheckIndividual);
+            $('.individualCheckbox').on('change', checkIndividual);
+            $('.individualCheckRow').on('click', checkRow);
+            $('#bulkMoveButton').on('click', bulkMove);
+            $(".period").flatpickr({
+                'locale' : 'ja',
+                'dateFormat' : 'Y-m-d H:i',
+                enableTime  : true
+            });
+
+            var close = $('.modal-close'),
+                container = $('.modal-container');
+            $('.folderNode').on('click',changeFolder);
+
+            $('#folderName').on('click', function(){
+                $('.modal-container').addClass('active');
+                return false;
+            });
+
+            close.on('click', function(){
+                container.removeClass('active');
+            });
+
+            $(document).on('click', function(e) {
+                if(!$(e.target).closest('.modal-body').length) {
+                    container.removeClass('active');
+                }
+            });
+
+            $('.childrenFolder a').on('click', moveChildFolder);
+            $('.parentFolder a').on('click', moveChildFolder);
+            $('#resetButton').on('click', resetSearch);
+            $('#omakaseButton').on('click', moveCreateForOmakase);
+            $('#manualButton').on('click', moveCreateForManual);
+
+            $('#resultClass').change(changeClass);
+        });
+    </script>
+    <script type="text/javascript">
+        function changeClass() {
+            window.location.href = './onigiri_quiz.php?lcid=' + $(this).val();
+        }
+
+        var currentPage = {$currentPage};
+
+        function pageNext() {
+            movePage(1);
+        }
+
+        function pagePrev() {
+            movePage(-1);
+        }
+
+        function movePage(addValue) {
+            var nextPage = currentPage + addValue;
+            if (nextPage <= 0) nextPage = 1;
+
+            $('#page').val(nextPage);
+            $('#searchForm').submit();
+        }
+
+        function changeFolder() {
+            let id = $(this).data('id');
+            let folderName = $(this).html();
+
+            $('#folderName').html(folderName);
+            $('#parentFolderId').val(id);
+            $('.modal-container').removeClass('active');
+        }
+
+        function moveChildFolder() {
+            let id = $(this).data('id');
+
+            $('#parentFolderId').val(id);
+            $('#page').val('');
+            $('#title').val('');
+            $('#teacher').val('');
+            $('#startDate').val('');
+            $('#endDate').val('');
+            $('#is_manual_mode_none').prop('checked', true);
+            $('#searchForm').submit();
+        }
+
+        function resetSearch() {
+            $('#parentFolderId').val(0);
+            $('#page').val('');
+            $('#title').val('');
+            $('#teacher').val('');
+            $('#startDate').val('');
+            $('#endDate').val('');
+            $('#is_manual_mode_none').prop('checked', true);
+            $('#searchForm').submit();
+        }
+
+        function moveCreateForOmakase()
+        {
+            let parentFolderId = $('#parentFolderId').val();
+            location.href='./onigiri_quiz_create.php?parent_folder_id=' + parentFolderId;
+        }
+
+        function moveCreateForManual()
+        {
+            let parentFolderId = $('#parentFolderId').val();
+            location.href='./onigiri_quiz_create.php?manual=1&parent_folder_id=' + parentFolderId;
+        }
+
+
+        function toggleAllCheckIndividual() {
+            let checked = $(this).prop("checked");
+
+            // 個別にチェックのONOFFを繰り返す
+            $(".individualCheckbox").each(function(index, element) {
+                if ($(element).prop('checked') != checked) {
+                    $(element).prop('checked', checked);
+                }
+            });
+        }
+
+        function checkRow(event) {
+            // チェックボックスがチェックされたら無視
+            if (event.target.type === 'checkbox') return;
+
+            $(this).find('.individualCheckbox').each(function(index, element) {
+                $(element).click();
+            });
+        }
+
+        function checkIndividual() {
+            var allChecked = true;
+
+            // 全チェック確認
+            $(".individualCheckbox").each(function(index, element) {
+                if (!$(element).prop("checked")) allChecked = false;
+            });
+
+            $("#checkAll").prop("checked", allChecked);
+        }
+
+        function bulkMove() {
+            let form = $("#bulkMoveForm");
+
+            if ($(".individualCheckbox:checked").length === 0) {
+                alert('移動させるテストを1つ以上選択してください。');
+                return;
+            }
+
+            $.ajax({
+                url: 'onigiri_quiz_folder_bulk_move_register.php',
+                type: 'post',
+                data: form.serialize(),
+                timeout: 30000,
+            })
+                .done(function (result) {
+                    if (result.error != null) {
+                        alert(result.error.message);
+                    } else if (result.result == 'OK') {
+                        alert('フォルダ移動しました');
+                        location.reload();
+                    } else {
+                        alert('予期せぬエラーが発生しました');
+                    }
+                })
+                .fail(function (result) {
+                    alert('予期せぬエラーが発生しました');
+                });
+        }
+    </script>
+</head>
+<body>
+<div id="container">
+    <div id="menuArea">
+        <div id="logoArea">
+            <img src="common/images/logo.png" alt="Test Creator LMS" />
+        </div>
+{include file='_side_menu.html' isJuku=$isJuku current='onigiri_quiz'}
+    </div>
+    <div id="contentArea">
+        <h2>テスト一括移動</h2>
+
+        <div class="onigiriQuizCreateButtonArea">
+            <button class="normalButton large" id="omakaseButton">おまかせモード</button>
+            <button class="normalButton large" id="manualButton">マニュアルモード</button>
+        </div>
+
+        <form action="" method="get" id="searchForm" style="margin-bottom: 30px">
+            <input type="hidden" name="page" id="page" />
+            <table>
+                <tbody>
+                <tr>
+                    <td>テスト名</td>
+                    <td><input type="text" name="title" value="{$searchParams->title}" id="title" /></td>
+                    <td style="padding-left: 15px">モード</td>
+                    <td>
+                        <input type="radio" name="is_manual_mode" value="" id="is_manual_mode_none" {if $searchParams->is_manual_mode==null && $searchParams->is_manual_mode!=="0"}checked{/if} /><label for="is_manual_mode_none"> なし</label>　
+                        <input type="radio" name="is_manual_mode" value="0" id="is_manual_mode_0" {if $searchParams->is_manual_mode==="0"}checked{/if} /><label for="is_manual_mode_0"> おまかせモード</label>　
+                        <input type="radio" name="is_manual_mode" value="1" id="is_manual_mode_1" {if $searchParams->is_manual_mode==1}checked{/if} /><label for="is_manual_mode_1"> マニュアルモード</label>
+                    </td>
+                </tr>
+                <tr>
+                    <td>作成者</td>
+                    <td>
+                        <select name="teacher_id" id="teacher" style="width: 200px">
+                            <option value=""></option>
+                            {foreach $teachers as $teacher name='loop'}
+                            {$teacher|var_dump}
+                            <option value="{$teacher.id}" {if $searchParams->teacher_id==$teacher.id}selected{/if}>{$teacher.name_1} {$teacher.name_2}</option>
+                            {/foreach}
+                        </select>
+                    </td>
+                    <td style="padding-left: 15px">作成日</td>
+                    <td>
+                        <input type="text" name="start_date" value="{$searchParams->start_date}" style="width: 130px;" class="period" id="startDate" /> ～
+                        <input type="text" name="end_date" value="{$searchParams->end_date}" style="width: 130px;" class="period" id="endDate" />
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+            <div class="currentFolder">
+                <a href="javascript:void(0)" id="folderName">{$currentFolder.name}</a>
+                <input type="hidden" name="parent_folder_id" value="{$currentFolder.id}" id="parentFolderId" />
+            </div>
+            <input type="submit" value="検索" class="normalButton middle" />
+            <button class="normalButton middle disabled" id="resetButton">リセット</button>
+        </form>
+
+        <form id="bulkMoveForm">
+        <input type="hidden" name="_csrf" value="{$csrf}" />
+        <table class="separateTable">
+            <thead>
+            <tr>
+                <th style="width: 30px"><input type="checkbox" name="quiz_id_all" id="checkAll" /></th>
+                <th>テスト名</th>
+                <th>作成者</th>
+                <th style="white-space: normal; width: 130px">作成日時</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td colspan="5">
+                    <div class="parentFolder">
+                        {if $currentFolder.id != 0}
+                        <a href="javascript:void(0)" data-id="{$currentFolder.parent_folder_id}">上のフォルダへ</a>
+                        {else}
+                        上のフォルダへ
+                        {/if}
+                    </div>
+                </td>
+            </tr>
+            {foreach $childrenFolders as $childrenFolder name='loop'}
+            <tr>
+                <td colspan="5">
+                    <div class="childrenFolder">
+                        <a href="javascript:void(0)" data-id="{$childrenFolder.id}">{$childrenFolder.name}</a>
+                    </div>
+                </td>
+            </tr>
+            {/foreach}
+
+{if !empty($records)}
+            {foreach $records as $record name='loop'}
+            {assign var=isMyRecord value=0}
+            {if $record.teacher_id == $teacherId}{assign var=isMyRecord value=1}{/if}
+            <tr class="individualCheckRow">
+                <td style="text-align: center">{if $isMyRecord}<input type="checkbox" name="quiz_ids[]" value="{$record.id}" class="individualCheckbox" />{/if}</td>
+                <td>{$record.title}</td>
+                <td>{$record.teacher_name_1} {$record.teacher_name_2}</td>
+                <td>{$record.create_date|date_format:"%g-%m-%d %T"}</td>
+            </tr>
+            {/foreach}
+{/if}
+            </tbody>
+        </table>
+
+{if empty($records)}
+        データがありません。
+{else}
+        <div id="historyPageControl">
+            <button type="button" class="prev normalButton x-small {if $currentPage == 1}disabled{/if}" {if $currentPage > 1}onclick="pagePrev()"{/if}>前へ</button>
+            <button type="button" class="next normalButton x-small {if $currentPage >= $maxPageNumber}disabled{/if}" {if $currentPage < $maxPageNumber}onclick="pageNext()"{/if}>次へ</button>
+        </div>
+
+        <p style="margin-top: 25px; font-weight: bold">チェックしたテストを下のフォルダに移動します。</p>
+        <select name="parent_folder_id" id="parentFolder" style="margin-bottom: 20px;">
+            {$folderListOptions}
+        </select>
+
+        <div>
+            <button type="button" class="normalButton middle" id="bulkMoveButton">実行</button>
+        </div>
+{/if}
+        </form>
+    </div>
+</div>
+
+<div class="modal-container">
+    <div class="modal-body">
+        <div class="modal-close">×</div>
+        <div class="modal-content">
+            <div id="choiceFolderContent">
+                <div id="folderManagementButton">
+                    <button class="normalButton middle" onclick="window.location.href='./onigiri_quiz_folder.php'">フォルダ管理</button>
+                </div>
+                <ul class="folderTree">
+                    <li>
+                        <a href="javascript:void(0)" data-id="all" data-parent_folder_id="0" data-teacher_id="0" class="folderNode">全てのフォルダ</a>
+                    </li>
+                </ul>
+                {$folderListHtml}
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,14 @@
+set charset utf8mb4;
+
+BEGIN;
+
+DROP VIEW student_lms_code_view;
+CREATE VIEW student_lms_code_view AS
+  SELECT
+    student_lms_code.*,
+    lms_code.lms_code,
+    lms_code.type
+  FROM student_lms_code
+  INNER JOIN lms_code ON student_lms_code.lms_code_id = lms_code.id;
+
+COMMIT;

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    {include file='_gtag.html'}
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex">
+    <title>おにぎり英単語用テスト作成</title>
+
+    {include file='_favicon.html'}
+
+    <link rel="stylesheet" href="../common/styles/reset.css" type="text/css">
+    <link rel="stylesheet" href="./common/styles/layout.css?20240120" type="text/css">
+    <link rel="stylesheet" href="./common/styles/onigiri_quiz.css" type="text/css">
+    <script src="./common/scripts/onigiri_preview.js"></script>
+    <script src="../common/scripts/jquery-3.6.0.min.js"></script>
+    <script>
+        function openResult(id) {
+            var url = '../student/onigiri_quiz_result.php?id=' + id + '&mode=t';
+            var options = 'width=400px,height=800px,menubar=no';
+            window.open(url, 'ResultWindow', options);
+        }
+    </script>
+</head>
+<body>
+<div id="container">
+    <div id="menuArea">
+        <div id="logoArea">
+            <img src="common/images/logo.png" alt="Test Creator LMS" />
+        </div>
+{include file='_side_menu.html' isJuku=$isJuku current='onigiri_quiz'}
+    </div>
+    <div id="contentArea">
+        <h2>{$title}</h2>
+
+        {if count($records) != 0}
+        <table class="separateTable" style="margin-top: 20px;">
+            <thead>
+            <tr>
+                <th scope="col" style="width: 200px">実施日</th>
+                <th scope="col">生徒名</th>
+                <th scope="col" style="width: 160px">正答率</th>
+                <th scope="col" style="width: 120px"></th>
+            </tr>
+            </thead>
+            <tbody>
+            {foreach $records as $record name='loop'}
+            <tr>
+                <td>{$record.create_date|date_format:"%Y-%m-%d %T"}</td>
+                <td>{$record.student_name}</td>
+                <td>{ceil(($record.score / $total) * 100)}% ({$record.score}/{$total})</td>
+                <td style="white-space: nowrap">
+                    <button class="normalButton middle" onclick="openResult('{$record.id}')">結果確認</button>
+                </td>
+            </tr>
+            {/foreach}
+            </tbody>
+        </table>
+        {else}
+        <div style="margin-top: 20px;">
+            まだ誰も回答していません。
+        </div>
+        {/if}
+    </div>
+</div>
+</body>
+</html>

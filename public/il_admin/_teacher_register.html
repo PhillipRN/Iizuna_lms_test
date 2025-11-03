@@ -1,0 +1,262 @@
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="robots" content="noindex">
+    <title>先生登録画面</title>
+
+    {include file='_favicon.html'}
+
+    <link rel="stylesheet" href="./common/style.css" type="text/css">
+    <link rel="stylesheet" href="./common/admin.css" type="text/css">
+    <script src="common/scripts/admin.js"></script>
+    <script src="../common/scripts/jquery-3.6.0.min.js"></script>
+    <script src="./common/scripts/password.js"></script>
+    {if $isUpdate}
+    <script type="text/javascript">
+        let isUpdate = true;
+    </script>
+    {else}
+    <script type="text/javascript">
+        let isUpdate = false;
+    </script>
+    {/if}
+    <script type="text/javascript">
+        $(function() {
+            $('#registrationForm').submit(registrationSubmit);
+            $('#randomButtonPassword').click(() => setRandomPassword('password'));
+            $('#lms_code').change(onChangeSchoolCode);
+        });
+
+        function setRandomPassword(id)
+        {
+            $('#' + id).val(genPassword(8));
+        }
+
+        function registrationSubmit(event) {
+            var errors = [];
+            let id = (isUpdate) ? $('#id').val() : null;
+            let loginId = $('#login_id').val();
+            let password = $('#password').val();
+
+            if ($('#school_name').val() == '') {
+                errors.push('学校を設定してください。');
+            }
+
+            if (loginId == '') {
+                errors.push('ログインIDを入力してください。');
+            }
+            else if (loginId.length > 64) {
+                errors.push('ログインIDは64文字以下で入力してください。');
+            }
+            else if (checkRegisteredLoginId(loginId, id)) {
+                errors.push('入力されているログインIDは既に登録されています。他のIDを指定してください。');
+            }
+
+            if (!isUpdate) {
+                if (password == '') {
+                    errors.push('ログインPWを入力してください。');
+                }
+                else if (password.length < 8) {
+                    errors.push('ログインPWは8文字以上で入力してください。');
+                }
+            }
+
+            if (errors.length != 0) {
+                $('#errors').html(errors.join('<br>'));
+                $(window).scrollTop($('#errors').position().top);
+                return false;
+            }
+
+            return true;
+        }
+
+        function checkRegisteredLoginId(loginId, id) {
+            var result = true;
+
+            $.ajax({
+                url: './check_login_id.php',
+                type: 'post',
+                data: { login_id:loginId, id:id },
+                async : false,
+                timeout: 30000,
+            })
+                .done(function(data) {
+                    // 通信が成功
+                    try {
+                        const obj = JSON.parse(data);
+
+                        if (obj.error != null)
+                        {
+                            result = true;
+                        }
+                        else result = false;
+
+                    } catch (e) {
+                        alert('データ取得時にエラーが発生しました。(' + e + ')');
+                        result = true;
+                    }
+                })
+                .fail(function(data) {
+                    // 通信が失敗
+                    alert('通信に失敗しました。');
+                    result = true;
+                });
+
+            return result;
+        }
+
+        function onChangeSchoolCode()
+        {
+            $('#school_error').html('');
+            $('#school_name').val('');
+
+            let lmsCode = $(this).val();
+
+            if (lmsCode != null && lmsCode != "" && lmsCode.length == 13) {
+                getSchool(lmsCode);
+            }
+        }
+
+        function getSchool(lmsCode)
+        {
+            let params = {
+                'lms_code': lmsCode
+            }
+
+            $.ajax({
+                url: 'search_school.php',
+                type: 'post',
+                data: params,
+                timeout: 30000,
+            })
+            .done(function(result) {
+                if (result.error != null)
+                {
+                    $('#school_error').html(result.error['message']);
+                    return;
+                }
+                else
+                {
+                    $('#school_id').val(result.id);
+                    $('#school_name').val(result.name);
+                }
+            })
+            .fail(function(result) {
+                alert('エラーが発生しました。');
+                return;
+            });
+        }
+    </script>
+</head>
+<body>
+{if $isRegistered}
+<script type="text/javascript">
+    alert("更新しました");
+</script>
+{/if}
+
+<p style="margin: 10px;"><a href="{if $isUpdate}teacher_list.php{else}index.php{/if}">戻る</a></p>
+<hr />
+<div id="contents">
+<h1>先生{if $isUpdate}更新{else}登録{/if}画面</h1>
+
+{if !$isUpdate}
+<h2>CSVで一括登録</h2>
+{if !empty($csvErrors)}
+{foreach $csvErrors as $error name='loop'}
+<span class="error">{$error}</span><br />
+{/foreach}
+{/if}
+<form method="post" action="teacher_register.php" enctype="multipart/form-data">
+    <input type="file" name="csvfile" size="30" />
+    <input type="submit" name="submit" value="一括登録" />
+</form>
+<hr />
+{/if}
+
+<h2>{if $isUpdate}先生更新画面{else}個別登録{/if}</h2>
+<div id="errors" class="text-danger error">
+    {foreach $errors as $error name='loop'}
+    {$error}<br />
+    {/foreach}
+</div>
+<form method="post" action="teacher_register.php{if $isUpdate}?id={$teacher.id}{/if}" id="registrationForm">
+    {if $isUpdate}
+    <input type="hidden" name="id" value="{$teacher.id}" id="id" />
+    ※セキュリティの観点からパスワードは表示できません。<br />
+    パスワードを変更する場合のみ、パスワードを入力してください。<br />
+    パスワードが空の場合、パスワードは更新されません。<br />
+    {/if}
+    <table class="admin_list">
+        <tr>
+            <th>ログインID</th>
+            <td><input type="text" name="login_id" value="{if isset($teacher.login_id)}{$teacher.login_id}{/if}" id="login_id" /></td>
+        </tr>
+        <tr>
+            <th>パスワード</th>
+            <td><input type="text" name="password" value="" id="password" /> <button type="button" id="randomButtonPassword">ランダムなパスワードを生成する</button></td>
+        </tr>
+        <tr>
+            <th>学校</th>
+            <td>
+                学校コード <input type="text" id="lms_code" maxlength="13" value="" /> <input type="text" name="school_name" id="school_name" value="{if isset($teacher.school_name)}{$teacher.school_name}{/if}" readonly style="background-color: #ddd" />
+                <input type="hidden" name="school_id" id="school_id" value="{if isset($teacher.school_id)}{$teacher.school_id}{/if}" />
+                <div id="school_error" class="text-danger error"></div>
+            </td>
+        </tr>
+        <tr>
+            <th>電話番号</th>
+            <td><input type="text" name="phone" value="{if isset($teacher.phone)}{$teacher.phone}{/if}" /></td>
+        </tr>
+        <tr>
+            <th>姓</th>
+            <td><input type="text" name="name_1" value="{if isset($teacher.name_1)}{$teacher.name_1}{/if}" /></td>
+        </tr>
+        <tr>
+            <th>名</th>
+            <td><input type="text" name="name_2" value="{if isset($teacher.name_2)}{$teacher.name_2}{/if}" /></td>
+        </tr>
+        <tr>
+            <th>セイ</th>
+            <td><input type="text" name="kana_1" value="{if isset($teacher.kana_1)}{$teacher.kana_1}{/if}" /></td>
+        </tr>
+        <tr>
+            <th>メイ</th>
+            <td><input type="text" name="kana_2" value="{if isset($teacher.kana_2)}{$teacher.kana_2}{/if}" /></td>
+        </tr>
+        <tr>
+            <th>メールアドレス</th>
+            <td><input type="text" name="mail" value="{if isset($teacher.mail)}{$teacher.mail}{/if}" /></td>
+        </tr>
+        <tr>
+            <th>書籍名</th>
+            <td>
+                ■ デジタルコンテンツ<br />
+                <input type="checkbox" name="is_e_onigiri" value="1" id="is_e_onigiri"{if isset($teacher.is_e_onigiri) && $teacher.is_e_onigiri} checked{/if}><label for="is_e_onigiri"> e-ONIGIRI英単語</label><br />
+{foreach $ebooks as $ebook name='loop'}
+{assign var=checked value=''}
+                {if isset($teacher.teacher_ebook) && in_array($ebook.title_no, $teacher.teacher_ebook)}{assign var=checked value='checked'}{/if}
+                <input type="checkbox" name="teacher_ebook[]" value="{$ebook.title_no}" id="teacher_ebook_{$ebook.title_no}" {$checked}><label for="teacher_ebook_{$ebook.title_no}"> e-ONIGIRI参考書 {$ebook.name}</label><br />
+{/foreach}
+                <br />
+                ■ 英語<br />
+                {foreach $bookList[0] as $data name='loop'}
+                <input type="checkbox" name="title_no[]" value="{$data.title_no}" id="book_0_{$data.title_no}"{if $data.title_no|in_array:$teacherBookList} checked{/if}><label for="book_0_{$data.title_no}"> {$data.title_no}_{$data.name}</label><br />
+                {/foreach}
+                <br />
+                ■ 国語<br />
+                {foreach $bookList[1] as $data name='loop'}
+                <input type="checkbox" name="title_no[]" value="{$data.title_no}" id="book_1_{$data.title_no}"{if $data.title_no|in_array:$teacherBookList} checked{/if}><label for="book_1_{$data.title_no}"> {$data.title_no}_{$data.name}</label><br />
+                {/foreach}
+            </td>
+        </tr>
+    </table>
+    <input type="submit" class="bb" style="margin-top:20px;" name="submit" value="{if $isUpdate}更新{else}登録{/if}" />
+</form>
+{if $isUpdate}
+<hr />
+※削除機能はありません。
+{/if}
+</div>
+</body>
+</html>

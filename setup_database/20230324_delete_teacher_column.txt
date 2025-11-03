@@ -1,0 +1,15 @@
+set charset utf8mb4;
+
+BEGIN;
+
+ALTER TABLE teacher DROP COLUMN classroom;
+ALTER TABLE teacher DROP COLUMN number_of_classroom;
+ALTER TABLE teacher DROP COLUMN subject;
+ALTER TABLE teacher DROP COLUMN number_of_students;
+
+DROP VIEW teacher_school_view;
+CREATE VIEW teacher_school_view AS SELECT t.*, s.name AS school_name, s.zip AS school_zip, s.pref AS school_pref, s.address AS school_address, s.phone AS school_phone, s.is_juku, lc.lms_code FROM teacher AS t INNER JOIN school AS s ON t.school_id = s.id INNER JOIN lms_code AS lc ON s.lms_code_id = lc.id;
+
+
+
+COMMIT;

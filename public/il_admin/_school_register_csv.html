@@ -1,0 +1,35 @@
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="robots" content="noindex">
+    <title>学校登録画面</title>
+
+    {include file='_favicon.html'}
+
+    <link rel="stylesheet" href="./common/style.css" type="text/css">
+    <link rel="stylesheet" href="./common/admin.css" type="text/css">
+</head>
+<body>
+<p style="margin: 10px;"><a href="{if $isUpdate}school_list.php{else}index.php{/if}">戻る</a></p>
+<hr />
+<div id="contents">
+<h1>学校登録画面</h1>
+
+<h2>一括登録</h2>
+処理を完了しました。<br />
+<br />
+
+<div id="errors" class="text-danger error">
+    {foreach $errorSchools as $errorSchool name='loop'}
+    {$errorSchool}<br />
+    {/foreach}
+</div>
+<div>
+    {foreach $registeredSchools as $registeredSchool name='loop'}
+    <b>{$registeredSchool}</b> は登録済みのためスキップしました。<br />
+    {/foreach}
+</div>
+
+</div>
+</body>
+</html>

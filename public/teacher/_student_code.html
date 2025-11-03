@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    {include file='_gtag.html'}
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex">
+    <title>Student</title>
+
+    {include file='_favicon.html'}
+
+    <link rel="stylesheet" href="../common/styles/reset.css" type="text/css">
+    <link rel="stylesheet" href="./common/styles/layout.css?20240120" type="text/css">
+    <link rel="stylesheet" href="./common/styles/scroll_box.css" type="text/css">
+    <script src="../common/scripts/jquery-3.6.0.min.js"></script>
+    <script type="text/javascript">
+        $(function() {
+            $('.studentDelete').click(checkAndDelete);
+            $('#allDeleteButton').click(deleteSubmit);
+            $('.qrCode').click(checkAndSubmitQR);
+            $('#allQrButton').click(submitFormForQR);
+        });
+
+        function checkAndDelete() {
+            let id = $(this).data('id');
+            let obj = $('#' + id);
+
+            obj.prop('checked', true);
+
+            if (!deleteConfirm()) {
+                obj.prop('checked', false);
+                return false;
+            }
+
+            deleteRegistration();
+            return false;
+        }
+
+        function deleteConfirm() {
+            return confirm("本当に削除しますか？\n※削除されたデータは元に戻すことはできません。");
+        }
+
+        function deleteSubmit() {
+            if (!deleteConfirm())
+            {
+                return false;
+            }
+
+            deleteRegistration();
+            return false;
+        }
+
+        function deleteRegistration() {
+            $('#errors').html('');
+
+            let form = $('#studentCodeForm');
+            let params = form.serializeArray()
+
+            var isCheck = false;
+
+            for (var i=0; i<params.length; ++i) {
+                if (params[i].name == 'student_code_ids[]' && params[i].value != '') {
+                    isCheck = true;
+                    break;
+                }
+            }
+
+            var errors = [];
+
+            if (!isCheck) {
+                errors.push('対象を選択してください。');
+            }
+
+            if (errors.length != 0) {
+                $('#errors').html(errors.join('<br>'));
+                return false;
+            }
+            else {
+                $.ajax({
+                    url: 'student_code_delete.php',
+                    type: 'post',
+                    data: form.serialize(),
+                    timeout: 30000,
+                })
+                    .done(function(result) {
+                        if (result.error != null)
+                        {
+                            $('#errors').html(result.error['message'] + ' (' + result.error['code'] + ')');
+                            return;
+                        }
+                        else if(result.result == 'OK')
+                        {
+                            alert('削除しました。');
+                            window.location = './student_code.php';
+                            return;
+                        }
+                        else
+                        {
+                            alert('予期せぬエラーが発生しました。');
+                            return;
+                        }
+                    })
+                    .fail(function(result) {
+                        alert('エラーが発生しました。');
+                        return;
+                    });
+            }
+
+            return false;
+        }
+
+        function checkAndSubmitQR() {
+            let id = $(this).data('id');
+            let obj = $('#' + id);
+
+            obj.prop('checked', true);
+
+            submitFormForQR();
+            return false;
+        }
+
+        function submitFormForQR() {
+            let form = $('#studentCodeForm');
+            let query = form.serialize();
+
+            if (query != "") {
+                let options = 'width=1024px,height=800px,menubar=no';
+                window.open('', 'QRCodeWindow', options);
+                form.attr('action', 'qr.php');
+                form.attr('target', 'QRCodeWindow');
+                form.submit();
+            }
+
+            return false;
+        }
+    </script>
+</head>
+<body>
+<div id="container">
+    <div id="menuArea">
+        <div id="logoArea">
+            <img src="common/images/logo.png" alt="Test Creator LMS" />
+        </div>
+{include file='_side_menu.html' isJuku=$isJuku current='student_code'}
+    </div>
+
+    <div id="contentArea">
+
+        <div>
+            <h2>Student登録管理（塾）</h2>
+            <div id="errors" class="caution">
+{if !empty($errors)}
+                {foreach $errors as $error name='loop'}
+                {$error}<br />
+                {/foreach}
+{/if}
+            </div>
+            <form id="studentCodeForm" method="post">
+                <table class="separateTable">
+                    <thead>
+                    <tr>
+                        <th class="checkboxCell"></th>
+                        <th>生徒名</th>
+                        <th style="width: 150px;">作成日時</th>
+                        <th style="width: 350px;">コード</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {foreach $records as $record name='loop'}
+                    <tr>
+                        <td class="checkboxCell"><input type="checkbox" name="student_code_ids[]" value="{$record.id}" id="record_id_{$record.id}" /></td>
+                        <td>{$record.name}</td>
+                        <td>{$record.create_date|date_format:"%g-%m-%d %T"}</td>
+                        <td>
+                            {$record.lms_code}
+                            <div class="rightButtonArea">
+                                <button class="normalButton middle qrCode" data-id="record_id_{$record.id}">QRコード生成</button>
+                                <button class="normalButton middle delete studentDelete" data-id="record_id_{$record.id}">削除</button>
+                            </div>
+                        </td>
+                    </tr>
+                    {/foreach}
+                    </tbody>
+                </table>
+
+                <div id="studentPageControl">
+                    <button id="prev" class="normalButton x-small {if $currentPage == 1}disabled{/if}" {if $currentPage > 1}onclick='location.href="student.php?page={$currentPage - 1}"'{/if}>前へ</button>
+                    <button id="next" class="normalButton x-small {if $currentPage >= $maxPageNumber}disabled{/if}" {if $currentPage < $maxPageNumber}onclick='location.href="student.php?page={$currentPage + 1}"'{/if}>次へ</button>
+                </div>
+
+                <div id="studentButtonArea">
+                    <button type="button" class="normalButton" onclick="location.href='./student_code_add.php'">追加</button>
+                    <button type="button" class="normalButton" id="allQrButton">まとめてQR生成</button>
+                    <button type="button" class="normalButton delete" id="allDeleteButton">まとめて削除</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,10 @@
+set charset utf8mb4;
+
+BEGIN;
+
+INSERT INTO book VALUES
+(10113,0,52,'Vintage 4th Edition 準拠ランダム問題集 Aviator'),
+(20040,1,512,'入試頻出漢字＋現代文重要語彙TOP2500四訂版'),
+(20041,1,513,'大学入試国語頻出問題1200五訂版');
+
+COMMIT;

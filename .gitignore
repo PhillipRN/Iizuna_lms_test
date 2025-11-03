@@ -1,0 +1,38 @@
+vendor/
+app/config.ini
+app/token.ini
+app/smarty_template_c/
+app/Temps/
+app/Assets/Sounds
+app/firebase_auth.json
+
+composer.phar
+.idea
+
+setup_database/batch/mysql-dbaccess.cnf
+setup_database/batch_ebook/mysql-dbaccess.cnf
+setup_database/ebook/export/*
+setup_database/ebook/import/*
+!setup_database/ebook/export/.gitkeep
+!setup_database/ebook/import/.gitkeep
+setup_database/iizuna_lms/export/*
+setup_database/iizuna_lms/import/*
+!setup_database/iizuna_lms/export/.gitkeep
+!setup_database/iizuna_lms/import/.gitkeep
+API.html
+
+# for Mac
+.DS_Store
+
+# for PHPUnit
+.phpunit.result.cache
+phpunit
+
+.htaccess
+.htpasswd
+
+change_repo_to_*
+
+# Docker volumes (開発環境用)
+docker-volumes/
+.env.local

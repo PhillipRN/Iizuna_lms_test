@@ -1,0 +1,29 @@
+set charset utf8mb4;
+
+BEGIN;
+
+# 生徒ごとにLMS情報をグループ化して表示するビュー
+# 特定のlms_code_idで絞り込めるようにlms_code_idも取得
+CREATE VIEW student_with_lms_codes_view AS
+SELECT 
+    s.id AS student_id,
+    s.contact_user_id,
+    s.name,
+    s.nickname,
+    s.school_name,
+    s.school_grade,
+    s.school_class,
+    s.student_number,
+    s.login_id,
+    GROUP_CONCAT(DISTINCT slc.lms_code_id ORDER BY slc.lms_code_id SEPARATOR ',') AS lms_code_ids,
+    GROUP_CONCAT(DISTINCT sg.name ORDER BY sg.name SEPARATOR '||') AS lms_code_names
+FROM 
+    student s
+LEFT JOIN 
+    student_lms_code slc ON s.id = slc.student_id
+LEFT JOIN 
+    school_group sg ON slc.lms_code_id = sg.lms_code_id
+GROUP BY 
+    s.id;
+
+COMMIT;

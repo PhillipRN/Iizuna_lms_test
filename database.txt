@@ -1,0 +1,773 @@
+CREATE DATABASE iizunaLMS DEFAULT CHARACTER SET utf8mb4;
+GRANT ALL ON iizunaLMS.* to 'iizunaLMS'@'localhost' identified by 'Gawbvgt2f983mru';
+
+mysql -u iizunaLMS -pGawbvgt2f983mru iizunaLMS
+
+# 先生用テーブル -------------------------------------------------------------
+# 先生
+CREATE TABLE teacher (
+    id BIGINT UNSIGNED AUTO_INCREMENT,
+    login_id VARCHAR(64) NOT NULL UNIQUE,
+    password TEXT NOT NULL,
+    school_id BIGINT UNSIGNED NOT NULL,
+    name_1 TEXT,
+    name_2 TEXT,
+    kana_1 TEXT,
+    kana_2 TEXT,
+    mail TEXT,
+    phone TEXT,
+    is_e_onigiri TINYINT NOT NULL DEFAULT 0,
+    create_date DATETIME,
+    update_date DATETIME,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB;
+
+CREATE INDEX index_teacher_login_id ON teacher(login_id);
+
+# 先生の所持している電子書籍
+CREATE TABLE teacher_ebook (
+    teacher_id BIGINT UNSIGNED NOT NULL,
+    title_no INTEGER UNSIGNED NOT NULL,
+    create_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_date DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+CREATE INDEX index_teacher_ebook_teacher_id ON teacher_ebook(teacher_id);
+
+CREATE VIEW teacher_ebook_view AS 
+  SELECT 
+    t.id AS teacher_id,
+    t.name_1,
+    t.name_2,
+    te.title_no
+  FROM teacher_ebook AS te 
+  INNER JOIN teacher AS t ON t.id = te.teacher_id;
+
+# 学校
+CREATE TABLE school (
+    id INT UNSIGNED AUTO_INCREMENT,
+    name TEXT NOT NULL,
+    zip TEXT,
+    pref TEXT,
+    address TEXT,
+    phone TEXT,
+    lms_code_id BIGINT UNSIGNED NOT NULL,
+    is_paid TINYINT NOT NULL DEFAULT 0,
+    is_juku TINYINT NOT NULL DEFAULT 0,
+    create_date DATETIME,
+    update_date DATETIME,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB;
+
+CREATE INDEX index_school_lms_code ON school(lms_code);
+
+
+CREATE VIEW teacher_school_view AS SELECT t.*, s.name AS school_name, s.zip AS school_zip, s.pref AS school_pref, s.address AS school_address, s.phone AS school_phone, s.is_paid, s.is_juku, lc.lms_code FROM teacher AS t INNER JOIN school AS s ON t.school_id = s.id INNER JOIN lms_code AS lc ON s.lms_code_id = lc.id;
+
+
+CREATE VIEW school_view AS SELECT s.*, lc.lms_code FROM school AS s INNER JOIN lms_code AS lc ON s.lms_code_id = lc.id;
+
+
+# グループ
+CREATE TABLE school_group (
+    id BIGINT UNSIGNED AUTO_INCREMENT,
+    school_id BIGINT UNSIGNED NOT NULL,
+    teacher_id BIGINT UNSIGNED NOT NULL,
+    name TEXT NOT NULL,
+    paid_application_status SMALLINT NOT NULL DEFAULT 0,
+    lms_code_id BIGINT UNSIGNED NOT NULL,
+    is_enable TINYINT NOT NULL DEFAULT 1,
+    is_paid TINYINT NOT NULL DEFAULT 0,
+    create_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_date DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB;
+
+CREATE INDEX index_school_group_teacher_id ON school_group(teacher_id);
+
+CREATE VIEW school_group_view AS SELECT sg.*, lc.lms_code, t.name_1 AS teacher_name_1, t.name_2 AS teacher_name_2, lca.use_count, lca.available_total, lca.application_total FROM school_group AS sg INNER JOIN lms_code AS lc ON sg.lms_code_id = lc.id INNER JOIN teacher AS t ON sg.teacher_id = t.id LEFT JOIN lms_code_amount AS lca ON sg.lms_code_id = lca.lms_code_id;
+
+# LMSコード
+CREATE TABLE lms_code (
+    id BIGINT UNSIGNED AUTO_INCREMENT,
+    lms_code VARCHAR(16) NOT NULL UNIQUE,
+    type TINYINT NOT NULL DEFAULT 1,       # 1:学校・クラス・グループ, 2:LMSチケット
+    create_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_date DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB;
+
+CREATE INDEX index_lms_code_lms_code ON lms_code(lms_code);
+
+# 塾用生徒コード
+CREATE TABLE student_code (
+    id BIGINT UNSIGNED AUTO_INCREMENT,
+    school_id BIGINT UNSIGNED NOT NULL,
+    teacher_id BIGINT UNSIGNED NOT NULL,
+    name TEXT NOT NULL,
+    lms_code_id BIGINT UNSIGNED NOT NULL,
+    create_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_date DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB;
+
+CREATE INDEX index_student_code_lms_code_id ON student_code(lms_code_id);
+
+CREATE VIEW student_code_view AS SELECT sc.*, lc.lms_code FROM student_code AS sc INNER JOIN lms_code AS lc ON sc.lms_code_id = lc.id;
+
+# LMSコードに紐づく学習範囲
+CREATE TABLE onigiri_learning_range (
+    lms_code_id BIGINT UNSIGNED NOT NULL,
+    sequential_number SMALLINT UNSIGNED DEFAULT 0,
+    genre TEXT NOT NULL,
+    learning_range_level INT DEFAULT 0,
+    stage INT DEFAULT 1,
+    create_date DATETIME
+) ENGINE=InnoDB;
+
+CREATE INDEX index_onigiri_learning_range_lms_code_id ON onigiri_learning_range(lms_code_id);
+
+CREATE VIEW onigiri_learning_range_view AS SELECT olr.*, lc.lms_code FROM onigiri_learning_range AS olr INNER JOIN lms_code AS lc ON olr.lms_code_id = lc.id;
+
+
+# LMSコードの数量管理
+CREATE TABLE lms_code_amount (
+    id BIGINT UNSIGNED AUTO_INCREMENT,
+    lms_code_id BIGINT UNSIGNED NOT NULL UNIQUE,
+    use_count INT NOT NULL DEFAULT 0,
+    available_total INT NOT NULL DEFAULT 0,
+    application_total INT NOT NULL DEFAULT 0,
+    create_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_date DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB;
+
+CREATE INDEX index_lms_code_amount_lms_code_id ON lms_code_amount(lms_code_id);
+
+
+# LMSコードの申請管理
+CREATE TABLE lms_code_application (
+    id BIGINT UNSIGNED AUTO_INCREMENT,
+    lms_code_id BIGINT UNSIGNED NOT NULL,
+    paid_application_status SMALLINT NOT NULL DEFAULT 0,
+    available_amount INT NOT NULL DEFAULT 0,
+    application_amount INT NOT NULL DEFAULT 0,
+    create_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_date DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB;
+
+CREATE INDEX index_lms_code_application_lms_code_id ON lms_code_application(lms_code_id);
+
+
+# 学校所持書籍
+CREATE TABLE school_book (
+    school_id BIGINT UNSIGNED NOT NULL,
+    title_no INTEGER UNSIGNED NOT NULL,
+    is_buy TINYINT NOT NULL DEFAULT 0,
+    is_display TINYINT NOT NULL DEFAULT 0,
+    create_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_date DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+CREATE INDEX index_school_book_school_id ON school_book(school_id);
+
+CREATE VIEW school_book_view AS SELECT sb.*, b.name, lc.lms_code FROM school_book AS sb INNER JOIN school AS s ON sb.school_id = s.id INNER JOIN lms_code AS lc ON s.lms_code_id = lc.id INNER JOIN book AS b ON b.title_no = sb.title_no;
+
+
+# ログイン試行回数カウント
+CREATE TABLE try_login (
+    id BIGINT UNSIGNED AUTO_INCREMENT,
+    user_id BIGINT UNSIGNED,
+    ip VARCHAR(64),
+    count INTEGER NOT NULL DEFAULT 1,
+    is_admin INTEGER NOT NULL DEFAULT 0,
+    expire_date DATETIME,
+    create_date DATETIME,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB;
+
+CREATE INDEX index_try_login_user_id ON try_login(user_id);
+CREATE INDEX index_try_login_ip ON try_login(ip);
+
+
+# 生徒用テーブル -------------------------------------------------------------
+# 生徒
+CREATE TABLE student (
+    id BIGINT UNSIGNED AUTO_INCREMENT,
+    contact_user_id VARCHAR(20) NOT NULL UNIQUE,
+    name TEXT,
+    nickname TEXT,
+    school_name TEXT,
+    school_grade TEXT,
+    school_class TEXT,
+    student_number TEXT,
+    onigiri_user_id TEXT,
+    ebook_user_id TEXT,
+    login_id VARCHAR(64) UNIQUE,
+    password TEXT,
+    is_change_password TINYINT DEFAULT 0,
+    create_date DATETIME,
+    update_date DATETIME,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB;
+
+
+# 生徒と LMS_CODE の紐づけ
+CREATE TABLE student_lms_code (
+    student_id BIGINT UNSIGNED NOT NULL,
+    lms_code_id BIGINT UNSIGNED NOT NULL,
+    create_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(student_id, lms_code_id)
+) ENGINE=InnoDB;
+
+CREATE INDEX index_student_lms_code_student_id ON student_lms_code(student_id);
+CREATE INDEX index_student_lms_code_lms_code_id ON student_lms_code(lms_code_id);
+
+CREATE VIEW student_lms_code_view AS
+  SELECT
+    student_lms_code.*,
+    lms_code.lms_code,
+    lms_code.type
+  FROM student_lms_code
+  INNER JOIN lms_code ON student_lms_code.lms_code_id = lms_code.id;
+
+
+生徒とLMSコードの一覧表示用ビュー
+
+# 生徒ごとにLMS情報をグループ化して表示するビュー
+# 特定のlms_code_idで絞り込めるようにlms_code_idも取得
+CREATE VIEW student_with_lms_codes_view AS
+SELECT 
+    s.id AS student_id,
+    s.contact_user_id,
+    s.name,
+    s.nickname,
+    s.school_name,
+    s.school_grade,
+    s.school_class,
+    s.student_number,
+    s.login_id,
+    GROUP_CONCAT(DISTINCT slc.lms_code_id ORDER BY slc.lms_code_id SEPARATOR ',') AS lms_code_ids,
+    GROUP_CONCAT(DISTINCT sg.name ORDER BY sg.name SEPARATOR '||') AS lms_code_names
+FROM 
+    student s
+LEFT JOIN 
+    student_lms_code slc ON s.id = slc.student_id
+LEFT JOIN 
+    school_group sg ON slc.lms_code_id = sg.lms_code_id
+GROUP BY 
+    s.id;
+
+
+# 認証キーテーブル
+CREATE TABLE student_authorization_key (
+    id BIGINT UNSIGNED AUTO_INCREMENT,
+    student_id BIGINT UNSIGNED NOT NULL,
+    authorization_key VARCHAR(16) NOT NULL UNIQUE,
+    create_date DATETIME,
+    expire_date DATETIME NOT NULL,
+    is_not_delete TINYINT DEFAULT 0,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB;
+
+CREATE INDEX index_student_authorization_key_authorization_key ON student_authorization_key(authorization_key);
+
+CREATE VIEW student_authorization_key_with_onigiri_view AS SELECT student_authorization_key.*, student.onigiri_user_id FROM student_authorization_key INNER JOIN student ON student_authorization_key.student_id = student.id;
+
+
+# アクセストークンテーブル
+CREATE TABLE student_access_token (
+    student_id BIGINT UNSIGNED NOT NULL,
+    access_token VARCHAR(128) NOT NULL UNIQUE,
+    create_date DATETIME,
+    expire_date DATETIME NOT NULL
+) ENGINE=InnoDB;
+
+CREATE INDEX index_student_access_token_access_token ON student_access_token(access_token);
+
+
+# リフレッシュトークンテーブル
+CREATE TABLE student_refresh_token (
+    student_id BIGINT UNSIGNED NOT NULL,
+    refresh_token VARCHAR(128) NOT NULL UNIQUE,
+    create_date DATETIME,
+    expire_date DATETIME NOT NULL
+) ENGINE=InnoDB;
+
+CREATE INDEX index_student_refresh_token_refresh_token ON student_refresh_token(refresh_token);
+
+
+# ログイントークンテーブル
+CREATE TABLE student_login_token (
+    student_id BIGINT UNSIGNED NOT NULL,
+    login_token VARCHAR(128) NOT NULL UNIQUE,
+    create_date DATETIME,
+    expire_date DATETIME NOT NULL
+) ENGINE=InnoDB;
+
+CREATE INDEX index_student_login_token_login_token ON student_login_token(login_token);
+
+
+# (開発用) 自動ログイントークンテーブル
+CREATE TABLE student_auto_login_token (
+    student_id BIGINT UNSIGNED NOT NULL,
+    auto_login_token VARCHAR(128) NOT NULL UNIQUE,
+    create_date DATETIME,
+    expire_date DATETIME NOT NULL
+) ENGINE=InnoDB;
+
+CREATE INDEX index_student_auto_login_token_auto_login_token ON student_auto_login_token(auto_login_token);
+
+
+# FCM トークンテーブル
+CREATE TABLE student_fcm_token (
+    student_id BIGINT UNSIGNED NOT NULL,
+    fcm_token TEXT NOT NULL,
+    failed_count INTEGER UNSIGNED NOT NULL DEFAULT 0,
+    expire_date DATETIME NOT NULL,
+    create_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_date DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+CREATE INDEX index_student_fcm_token_composite ON student_fcm_token(student_id, fcm_token(200));
+
+# テスト用テーブル -------------------------------------------------------------
+CREATE TABLE teacher_book (
+    teacher_id BIGINT UNSIGNED NOT NULL,
+    title_no INTEGER UNSIGNED NOT NULL,
+    update_date DATETIME,
+    UNIQUE teacher_id_title_no_index(teacher_id, title_no)
+) ENGINE=InnoDB;
+
+CREATE TABLE teacher_book_temp (
+    teacher_id BIGINT UNSIGNED NOT NULL,
+    title_no INTEGER UNSIGNED NOT NULL,
+    status INT NOT NULL DEFAULT 0,
+    registration_key_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    create_date DATETIME,
+    update_date DATETIME,
+    UNIQUE teacher_id_title_no_index(teacher_id, title_no)
+) ENGINE=InnoDB;
+
+CREATE TABLE registration_key (
+    id BIGINT UNSIGNED AUTO_INCREMENT,
+    title_no INTEGER UNSIGNED NOT NULL,
+    hash_key VARCHAR(64) NOT NULL UNIQUE,
+    status SMALLINT NOT NULL,
+    regist_teacher_id BIGINT UNSIGNED,
+    create_date DATETIME,
+    update_date DATETIME,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB;
+
+
+CREATE TABLE book_range (
+    title_no INTEGER UNSIGNED NOT NULL UNIQUE,
+    page_min INTEGER,
+    page_max INTEGER,
+    midasi_no_min INTEGER,
+    midasi_no_max INTEGER,
+    question_no_flg INTEGER,
+    chapter_flg INTEGER,
+    midasi_no_flg INTEGER,
+    midasi_flg INTEGER,
+    level_flg INTEGER,
+    frequency_flg INTEGER,
+    PRIMARY KEY(title_no)
+) ENGINE=InnoDB;
+
+CREATE TABLE book (
+    title_no INTEGER UNSIGNED NOT NULL UNIQUE,
+    type INTEGER NOT NULL,
+    sort INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    PRIMARY KEY(title_no)
+) ENGINE=InnoDB;
+
+# json_quiz用テーブル -------------------------------------------------------------
+# Jsonクイズ
+CREATE TABLE json_quiz (
+    id BIGINT UNSIGNED AUTO_INCREMENT,
+    parent_folder_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    teacher_id BIGINT UNSIGNED NOT NULL,
+    title_no INTEGER UNSIGNED NOT NULL,
+    language_type SMALLINT NOT NULL DEFAULT 0,
+    title TEXT NOT NULL,
+    json MEDIUMTEXT NOT NULL,
+    max_score INTEGER UNSIGNED NOT NULL,
+    calc_correct_answer_rate SMALLINT NOT NULL DEFAULT 0,
+    open_date DATETIME NOT NULL,
+    expire_date DATETIME NOT NULL,
+    time_limit SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    create_date DATETIME,
+    update_date DATETIME,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB;
+
+CREATE INDEX index_json_quiz_school_id ON json_quiz(school_id);
+CREATE INDEX index_json_quiz_open_date ON json_quiz(open_date);
+CREATE INDEX index_json_quiz_expire_dated ON json_quiz(expire_date);
+
+# Jsonクイズオプション
+CREATE TABLE json_quiz_option (
+    json_quiz_id BIGINT UNSIGNED NOT NULL,
+    mode TINYINT DEFAULT 0,                     # 0:おまかせ, 1:マニュアル
+    range_type TEXT,                            # 出題の範囲
+    page_ranges TEXT,                           # ページで指定する
+    question_number_ranges TEXT,                # 問題番号で指定する
+    midasi_number_ranges TEXT,                  # 見出し番号で指定する
+    section_numbers TEXT,                       # 章・節で指定する
+    midasi_numbers TEXT,                        # 見出し語を個別に指定する
+    sort TINYINT DEFAULT 0,                     # 出題順
+    is_show_question_no TINYINT DEFAULT 0,      # 問題文に問題番号を表示
+    is_show_midasi_no TINYINT DEFAULT 0,        # 問題文に見出し語番号を表示
+    manual_is_individual TEXT,                  # マニュアルモード 問題を個別に選択
+    manual_syubetu_numbers TEXT,                # マニュアルモード 今回の出題数
+    manual_change_display TINYINT DEFAULT 0,    # マニュアルモード 表示切替
+    manual_frequencies TEXT,                    # マニュアルモード 出題頻度
+    manual_syomon_numbers TEXT,                 # マニュアルモード 個別選択
+    manual_individual_selected_json TEXT,       # マニュアルモード 個別選択用jsonデータ
+    create_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_date DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY(json_quiz_id)
+) ENGINE=InnoDB;
+
+# 配信
+CREATE TABLE json_quiz_delivery (
+    json_quiz_id BIGINT UNSIGNED NOT NULL,
+    lms_code_id BIGINT UNSIGNED NOT NULL,
+    create_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(json_quiz_id, lms_code_id)
+) ENGINE=InnoDB;
+
+CREATE INDEX index_json_quiz_delivery_json_quiz_id ON json_quiz_delivery(json_quiz_id);
+
+# 回答結果
+CREATE TABLE json_quiz_result (
+    id BIGINT UNSIGNED AUTO_INCREMENT,
+    json_quiz_id BIGINT UNSIGNED NOT NULL,
+    student_id BIGINT UNSIGNED NOT NULL,
+    answers_json MEDIUMTEXT NOT NULL,
+    score INTEGER UNSIGNED NOT NULL,
+    is_first_result TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    create_date DATETIME,
+    update_date DATETIME,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB;
+
+CREATE INDEX index_json_quiz_result_json_quiz_id ON json_quiz_result(json_quiz_id);
+CREATE INDEX index_json_quiz_result_student_id ON json_quiz_result(student_id);
+
+
+# 集計結果
+CREATE TABLE json_quiz_result_summary (
+    id BIGINT UNSIGNED AUTO_INCREMENT,
+    json_quiz_id BIGINT UNSIGNED NOT NULL,
+    average INT NOT NULL DEFAULT 0,
+    highest_score INT NOT NULL DEFAULT 0,
+    lowest_score INT NOT NULL DEFAULT 0,
+    correct_answer_rates_json TEXT NOT NULL,
+    create_date DATETIME,
+    update_date DATETIME,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB;
+
+CREATE INDEX index_json_quiz_result_summary_json_quiz_id ON json_quiz_result_summary(json_quiz_id);
+
+# 統計データ
+CREATE TABLE json_quiz_result_statistics (
+    id BIGINT UNSIGNED AUTO_INCREMENT,
+    json_quiz_id BIGINT UNSIGNED NOT NULL,
+    answer_rates_json TEXT NOT NULL,
+    create_date DATETIME,
+    update_date DATETIME,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB;
+
+CREATE INDEX index_json_quiz_result_statistics_json_quiz_id ON json_quiz_result_statistics(json_quiz_id);
+
+# フォルダ
+CREATE TABLE json_quiz_folder (
+    id BIGINT UNSIGNED AUTO_INCREMENT,
+    parent_folder_id BIGINT UNSIGNED  NOT NULL DEFAULT 0,
+    teacher_id BIGINT UNSIGNED NOT NULL,
+    name TEXT NOT NULL,
+    create_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_date DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB;
+
+CREATE INDEX index_json_quiz_folder_parent_folder_id ON json_quiz_folder(parent_folder_id);
+CREATE INDEX index_json_quiz_folder_teacher_id ON json_quiz_folder(teacher_id);
+
+CREATE VIEW json_quiz_folder_view AS SELECT jqf.*, t.school_id FROM json_quiz_folder AS jqf INNER JOIN teacher AS t ON jqf.teacher_id = t.id;
+
+
+# ebook用テーブル -------------------------------------------------------------
+CREATE TABLE ebook_example (
+    id BIGINT UNSIGNED NOT NULL,
+    title_no INT UNSIGNED NOT NULL,
+    chapter TINYINT UNSIGNED NOT NULL,
+    primary_item TINYINT UNSIGNED NOT NULL,
+    secondary_item TINYINT UNSIGNED NOT NULL,
+    tertiary_item TINYINT UNSIGNED NOT NULL,
+    page SMALLINT UNSIGNED NOT NULL,
+    english TEXT NOT NULL,
+    japanese TEXT NOT NULL,
+    voice TEXT NOT NULL,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB;
+
+CREATE INDEX index_ebook_example_title_no ON ebook_example(title_no);
+CREATE INDEX index_ebook_example_chapter ON ebook_example(chapter);
+CREATE INDEX index_ebook_example_page ON ebook_example(page);
+
+# ebook 問題
+CREATE TABLE ebook_quiz (
+    id BIGINT UNSIGNED  NOT NULL,
+    title_no INT UNSIGNED NOT NULL,
+    chapter TINYINT UNSIGNED NOT NULL,
+    primary_item TINYINT UNSIGNED NOT NULL,
+    secondary_item TINYINT UNSIGNED NOT NULL,
+    tertiary_item TINYINT UNSIGNED NOT NULL,
+    page SMALLINT UNSIGNED NOT NULL,
+    question_kind SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+    question_genre SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+    entrance_exam_college_name TEXT,
+    entrance_exam_faculty TEXT,
+    entrance_exam_year TEXT,
+    question_type SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+    is_upper_case_judgement TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    instruction TEXT,
+    body_1 TEXT NOT NULL,
+    body_2 TEXT,
+    choices TEXT,
+    answers TEXT NOT NULL,
+    voice TEXT,
+    example_id BIGINT UNSIGNED,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB;
+
+CREATE INDEX index_ebook_quiz_title_no ON ebook_quiz(title_no);
+CREATE INDEX index_ebook_quiz_chapter ON ebook_quiz(chapter);
+CREATE INDEX index_ebook_quiz_page ON ebook_quiz(page);
+CREATE INDEX index_ebook_quiz_question_kind ON ebook_quiz(question_kind);
+CREATE INDEX index_ebook_quiz_question_genre ON ebook_quiz(question_genre);
+CREATE INDEX index_ebook_quiz_question_type ON ebook_quiz(question_type);
+
+
+# 書籍申請用テーブル -------------------------------------------------------------
+CREATE TABLE teacher_book_application (
+    id BIGINT UNSIGNED AUTO_INCREMENT,
+    teacher_id BIGINT UNSIGNED NOT NULL,
+    title_no INTEGER UNSIGNED NOT NULL,
+    status SMALLINT NOT NULL DEFAULT 0,
+    create_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_date DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB;
+
+CREATE INDEX index_teacher_book_application_teacher_id ON teacher_book_application(teacher_id);
+
+CREATE VIEW teacher_book_application_view AS SELECT tba.*, b.name , t.name_1 AS teacher_name_1, t.name_2 AS teacher_name_2, s.name AS school_name FROM teacher_book_application AS tba INNER JOIN book AS b ON tba.title_no = b.title_no INNER JOIN teacher AS t ON tba.teacher_id = t.id INNER JOIN school AS s ON t.school_id = s.id;
+
+
+CREATE TABLE teacher_book_application_log (
+    teacher_id BIGINT UNSIGNED NOT NULL,
+    title_no INTEGER UNSIGNED NOT NULL,
+    type SMALLINT NOT NULL DEFAULT 0,
+    create_date DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+CREATE INDEX index_teacher_book_application_log_teacher_id ON teacher_book_application_log(teacher_id);
+
+
+# Onigiri英単語用 json_quizテーブル -------------------------------------------------------------
+# Jsonクイズ
+CREATE TABLE onigiri_json_quiz (
+    id BIGINT UNSIGNED AUTO_INCREMENT,
+    parent_folder_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    teacher_id BIGINT UNSIGNED NOT NULL,
+    range_lms_code_id BIGINT UNSIGNED DEFAULT 0,
+    range_stage TEXT,
+    ranges TEXT,
+    total SMALLINT UNSIGNED NOT NULL,
+    title TEXT NOT NULL,
+    type TEXT,
+    json MEDIUMTEXT NOT NULL,
+    calc_correct_answer_rate SMALLINT NOT NULL DEFAULT 0,
+    open_date DATETIME NOT NULL,
+    expire_date DATETIME NOT NULL,
+    time_limit SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    is_manual_mode TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    create_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_date DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB;
+
+CREATE INDEX index_onigiri_json_quiz_teacher_id ON onigiri_json_quiz(teacher_id);
+
+# 配信
+CREATE TABLE onigiri_json_quiz_delivery (
+    onigiri_json_quiz_id BIGINT UNSIGNED NOT NULL,
+    lms_code_id BIGINT UNSIGNED NOT NULL,
+    notice_id TEXT,
+    create_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(onigiri_json_quiz_id, lms_code_id)
+) ENGINE=InnoDB;
+
+CREATE INDEX index_onigiri_json_quiz_delivery_json_quiz_id ON onigiri_json_quiz_delivery(onigiri_json_quiz_id);
+
+# 回答結果
+CREATE TABLE onigiri_json_quiz_result (
+    id BIGINT UNSIGNED AUTO_INCREMENT,
+    onigiri_json_quiz_id BIGINT UNSIGNED NOT NULL,
+    student_id BIGINT UNSIGNED NOT NULL,
+    answers_json MEDIUMTEXT NOT NULL,
+    score INTEGER UNSIGNED NOT NULL,
+    is_first_result TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    create_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_date DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB;
+
+CREATE INDEX index_onigiri_json_quiz_result_json_quiz_id ON onigiri_json_quiz_result(onigiri_json_quiz_id);
+CREATE INDEX index_onigiri_json_quiz_result_student_id ON onigiri_json_quiz_result(student_id);
+
+# 統計データ
+CREATE TABLE onigiri_json_quiz_result_statistics (
+    id BIGINT UNSIGNED AUTO_INCREMENT,
+    onigiri_json_quiz_id BIGINT UNSIGNED NOT NULL,
+    answer_rates_json TEXT NOT NULL,
+    create_date DATETIME,
+    update_date DATETIME,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB;
+
+CREATE INDEX index_onigiri_json_quiz_result_statistics_onigiri_json_quiz_id ON onigiri_json_quiz_result_statistics(onigiri_json_quiz_id);
+
+
+# json_quiz と onigiri_json_quiz をまとめたビュー
+CREATE VIEW json_quiz_combined_view AS SELECT id AS json_quiz_id, 0 AS onigiri_json_quiz_id, teacher_id, title, language_type, json, max_score, open_date, expire_date, time_limit, create_date FROM json_quiz UNION SELECT 0 AS json_quiz_id, id AS onigiri_json_quiz_id, teacher_id, title, 99 AS language_type, json, total AS max_score, open_date, expire_date, time_limit, create_date FROM onigiri_json_quiz;
+
+
+# フォルダ
+CREATE TABLE onigiri_json_quiz_folder (
+    id BIGINT UNSIGNED AUTO_INCREMENT,
+    parent_folder_id BIGINT UNSIGNED  NOT NULL DEFAULT 0,
+    teacher_id BIGINT UNSIGNED NOT NULL,
+    name TEXT NOT NULL,
+    create_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_date DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB;
+
+CREATE INDEX index_onigiri_json_quiz_folder_parent_folder_id ON onigiri_json_quiz_folder(parent_folder_id);
+CREATE INDEX index_onigiri_json_quiz_folder_teacher_id ON onigiri_json_quiz_folder(teacher_id);
+
+CREATE VIEW onigiri_json_quiz_folder_view AS SELECT jqf.*, t.school_id FROM onigiri_json_quiz_folder AS jqf INNER JOIN teacher AS t ON jqf.teacher_id = t.id;
+
+
+# LMS チケット -----------------------------------------------
+# LMS チケット
+CREATE TABLE lms_ticket (
+    id BIGINT UNSIGNED AUTO_INCREMENT,
+    school_id BIGINT UNSIGNED NOT NULL DEFAULT 0,   # 学校ID
+    teacher_id BIGINT UNSIGNED NOT NULL DEFAULT 0,  # 先生ID
+    title_no INTEGER UNSIGNED NOT NULL,             # 書籍NO、e-ONIGIRI は 900001
+    expire_year SMALLINT NOT NULL,                  # 期限（年）
+    expire_month TINYINT NOT NULL,                  # 期限（月）
+    status TINYINT NOT NULL DEFAULT 0,              # 0:無効、1:有効、2:先生が削除、3:管理者が削除
+    create_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_date DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB;
+
+CREATE INDEX index_lms_ticket_school_id ON lms_ticket(school_id);
+CREATE INDEX index_lms_ticket_teacher_id ON lms_ticket(teacher_id);
+
+# LMS チケットの申請管理
+CREATE TABLE lms_ticket_application (
+    id BIGINT UNSIGNED AUTO_INCREMENT,
+    lms_ticket_id BIGINT UNSIGNED NOT NULL,  # 親 LMS チケットID
+    quantity INT NOT NULL DEFAULT 0,         # 数量
+    status TINYINT NOT NULL DEFAULT 1,       # 1:購入申請中、2:購入済み、3:先生が取り消し、4:管理者が取り消し
+    type TINYINT NOT NULL DEFAULT 1,         # 1:先生が購入申請、2:管理者が付与
+    create_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_date DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB;
+
+CREATE INDEX index_lms_ticket_application_lms_ticket_id ON lms_ticket_application(lms_ticket_id);
+
+CREATE VIEW lms_ticket_application_view AS 
+  SELECT 
+    lta.id,
+    lta.lms_ticket_id,
+    lt.title_no,
+    lt.school_id,
+    s.name AS school_name,
+    lt.teacher_id,
+    t.name_1 AS teacher_name_1,
+    t.name_2 AS teacher_name_2,
+    lt.expire_year,
+    lt.expire_month,
+    lt.status AS lms_ticket_status,
+    lta.status AS lms_ticket_application_status,
+    lta.type AS lms_ticket_application_type,
+    lta.quantity,
+    lta.create_date,
+    lta.update_date
+  FROM lms_ticket_application AS lta 
+  INNER JOIN lms_ticket AS lt ON lta.lms_ticket_id = lt.id
+  LEFT JOIN teacher AS t ON lt.teacher_id = t.id
+  LEFT JOIN school AS s ON lt.school_id = s.id;
+
+# LMS チケットグループ（生徒が利用するのはこちら）
+CREATE TABLE lms_ticket_group (
+    id BIGINT UNSIGNED AUTO_INCREMENT,
+    lms_ticket_id BIGINT UNSIGNED NOT NULL, # 親 LMS チケットID
+    lms_code_id BIGINT UNSIGNED NOT NULL,   # LMS コードID
+    name TEXT NOT NULL,                     # チケットグループ名
+    quantity INTEGER NOT NULL DEFAULT 0,    # 数量
+    status TINYINT NOT NULL DEFAULT 0,      # 0:無効、1:有効、2:先生が削除
+    create_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_date DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB;
+
+CREATE INDEX index_lms_ticket_group_lms_ticket_id ON lms_ticket_group(lms_ticket_id);
+CREATE INDEX index_lms_ticket_group_lms_code_id ON lms_ticket_group(lms_code_id);
+
+# LMS チケット使用数
+CREATE TABLE lms_ticket_group_use_count (
+    lms_ticket_group_id BIGINT UNSIGNED NOT NULL,   # LMチケットグループID
+    use_count INTEGER NOT NULL DEFAULT 0,           # 使用数
+    create_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_date DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY(lms_ticket_group_id)
+) ENGINE=InnoDB;
+
+CREATE VIEW lms_ticket_group_view AS 
+  SELECT 
+    ltg.id,
+    ltg.lms_ticket_id,
+    lt.title_no,
+    lt.school_id,
+    lt.teacher_id,
+    lt.expire_year,
+    lt.expire_month,
+    ltg.name,
+    ltg.quantity,
+    lt.status AS lms_ticket_status,
+    ltg.status,
+    ltguc.use_count,
+    ltg.lms_code_id,
+    lc.lms_code,
+    ltg.create_date
+  FROM lms_ticket_group AS ltg 
+  INNER JOIN lms_ticket AS lt ON lt.id = ltg.lms_ticket_id
+  INNER JOIN lms_ticket_group_use_count AS ltguc ON ltguc.lms_ticket_group_id = ltg.id
+  INNER JOIN lms_code AS lc ON ltg.lms_code_id = lc.id;
+

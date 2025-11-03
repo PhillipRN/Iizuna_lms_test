@@ -1,0 +1,10 @@
+set charset utf8mb4;
+
+BEGIN;
+
+ALTER TABLE onigiri_learning_range ADD sequential_number SMALLINT UNSIGNED DEFAULT 0 AFTER lms_code_id;
+
+# すでにあるデータに暫定的な連番をふる
+UPDATE onigiri_learning_range t1 JOIN (SELECT lms_code_id, ROW_NUMBER() OVER (PARTITION BY lms_code_id) AS line, genre, learning_range_level, stage FROM onigiri_learning_range) t2 ON t1.lms_code_id = t2.lms_code_id AND t1.genre = t2.genre AND t1.learning_range_level = t2.learning_range_level AND t1.stage = t2.stage SET t1.sequential_number = t2.line;
+
+COMMIT;

@@ -1,0 +1,714 @@
+<!doctype html>
+<html>
+<head>
+    {include file='_gtag.html'}
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>成績</title>
+
+    {include file='_favicon.html'}
+
+    <!-- link -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="common/style/test.css?250417">
+    <link href="https://fonts.googleapis.com/css?family=Cormorant+Garamond:400,400i,500,500i,600,600i,700,700i" rel="stylesheet">
+
+    <!-- scripts -->
+    <script src="../common/scripts/jquery-3.6.0.min.js"></script>
+    <script src="common/script/chart.min.js"></script>
+    <script src="common/script/common.js"></script>
+    <style>
+        html,body{
+            overflow-y: hidden;
+        }
+        #test_index,#test_footer{
+            width: 100%;
+            height: calc(100vw * 90 / 750);
+            background-color: #edf1f4;
+            overflow: hidden;
+        }
+        #test_index{
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #test_index p{
+            text-align: center;
+            font-weight: bold;
+        }
+        #test_footer p{
+            width: calc(100vw * 330 / 750);
+            height: calc(100vw * 75 / 750);
+            margin: calc(100vw * 5 / 750) auto 0 ;
+            line-height: calc(100vw * 75 / 750);
+            text-align: center;
+            background-color: #ffcc01;
+            border-radius: calc(100vw * 25 / 750);
+            font-weight: bold;
+        }
+        #test_detail{
+            width: 100%;
+            min-width: 100%;
+            height: calc(100vh - calc(100vw * 240 / 750));
+            overflow: scroll;
+            background-color: #ffffff;
+        }
+        #test_detail.vertical{
+            text-orientation: upright;
+            writing-mode: vertical-rl;
+            padding: calc(100vw * 50 / 750);
+            overflow-y: hidden;
+        }
+        #test_detail.horizontal{
+            overflow-x: hidden;
+        }
+        .q_box{
+            width: 100%;
+            min-width: 100%;
+            padding: calc(100vw * 50 / 750);
+        }
+        #score{
+            background-color: #eef2f5;
+            text-align: center;
+            vertical-align: middle;
+            line-height: calc(100vw * 77 / 480);
+        }
+        .vertical #score{
+            height: 100%;
+            width: calc(100vw * 77 / 480);
+        }
+        .horizontal #score{
+            width: 100%;
+            height: calc(100vw * 77 / 480);
+            margin-bottom: calc(100vw * 70 / 750);
+        }
+        #get_score{
+            color: #3280c9;
+            font-size: 120%;
+            font-weight: bold;
+        }
+        #total_score{
+            font-weight: bold;
+        }
+        .vertical .q_index{
+            padding-left: calc(100vw * 70 / 750);
+            padding-right: calc(100vw * 70 / 750);
+            font-weight: bold;
+        }
+        .vertical .q_detail{
+            padding-left: calc(100vw * 25 / 750);
+            padding-top: calc(100vw * 60 / 750);
+            text-indent: calc(100vw * -60 / 750);
+        }
+        .vertical .q_answer{
+            padding-left: calc(100vw * 70 / 750);
+        }
+        .vertical .q_answer_input_type{
+            padding-top: calc(100vw * 60 / 750);
+        }
+        .vertical .radio-label {
+            display: block;
+            margin-left: calc(100vw * 10 / 750);
+            position: relative;
+        }
+        .horizontal .q_index{
+            padding-bottom: calc(100vw * 50 / 750);
+            font-weight: bold;
+        }
+        .horizontal .q_detail{
+            padding-bottom: calc(100vw * 25 / 750);
+            padding-left: calc(100vw * 40 / 750);
+            text-indent: calc(100vw * -37 / 750);
+        }
+        .horizontal .q_answer{
+            padding-bottom: calc(100vw * 50 / 750);
+        }
+        .horizontal .q_answer input{
+            width: 98%;
+        }
+        .horizontal .radio-label {
+            display: block;
+            margin-bottom: calc(100vw * 10 / 750);
+        }
+
+        .radio-label_correct{
+            background-color: #cce8fe;
+            border-radius: calc(100vw * 20 / 750);
+        }
+        .radio-label_correct:before{
+            content: "";
+            display: inline-block;
+            width: calc(100vw * 10 / 750);
+            height: calc(100vw * 10 / 750);
+            border-width: calc(100vw * 4 / 750);
+            border-style: solid;
+            border-radius: 50%;
+            border-color: #3280c9;
+            background-color: #3280c9;
+            background-clip: content-box;
+        }
+        .vertical .radio-label_correct:before{
+            margin-top:calc(100vw * 14 / 750);
+            position: absolute;
+            right: 5px;
+        }
+        .horizontal .radio-label_correct:before{
+            margin-left:calc(100vw * 14 / 750);
+        }
+
+        .radio-label_incorrect{
+            background-color: #ffc7c6;
+            border-radius: calc(100vw * 20 / 750);
+        }
+
+        .radio-label_incorrect:before{
+            content: "";
+            display: inline-block;
+            width: calc(100vw * 10 / 750);
+            height: calc(100vw * 10 / 750);
+            border-width: calc(100vw * 4 / 750);
+            border-style: solid;
+            border-radius: 50%;
+            border-color: #f7736e;
+            background-color: #f7736e;
+            background-clip: content-box;
+        }
+        .vertical .radio-label_incorrect:before{
+            margin-top:calc(100vw * 14 / 750);
+            position: absolute;
+            right: 5px;
+        }
+        .horizontal .radio-label_incorrect:before{
+            margin-left:calc(100vw * 14 / 750);
+        }
+
+        .radio-label_other:before{
+            content: "";
+            display: inline-block;
+            width: calc(100vw * 10 / 750);
+            height: calc(100vw * 10 / 750);
+            border-width: calc(100vw * 4 / 750);
+            border-style: solid;
+            border-radius: 50%;
+            border-color: transparent;
+            background-color: transparent;
+            background-clip: content-box;
+        }
+        .vertical .radio-label_other:before{
+            margin-top:calc(100vw * 14 / 750);
+            position: absolute;
+            right: 5px;
+        }
+        .horizontal .radio-label_other:before{
+            margin-left:calc(100vw * 14 / 750);
+        }
+
+        .q_detail_correct:before{
+            content: "";
+            display: inline-block;
+            width: calc(100vw * 13 / 750);
+            height: calc(100vw * 13 / 750);
+            border-width: calc(100vw * 4 / 750);
+            border-style: solid;
+            border-radius: 50%;
+            border-color: #3280c9;
+            padding: calc(100vw * 4 / 750);
+            background-clip: content-box;
+        }
+        .vertical .q_detail_correct:before{
+            margin-bottom: calc(100vw * 4 / 750);
+        }
+        .horizontal .q_detail_correct:before{
+            margin-right: calc(100vw * 4 / 750);
+            vertical-align: middle;
+        }
+
+        .horizontal .q_detail_incorrect{
+            display: inline-block;
+            position: relative;
+            width: calc(100vw * 13 / 750);
+            margin-right: calc(100vw * 6 / 750);
+            margin-left: calc(100vw * 10 / 750);
+            vertical-align: middle;
+        }
+
+        .q_detail_incorrect:before{
+            content: "";
+            top: 50%;
+            left: 50%;
+            width: calc(100vw * 4 / 750);
+            height: calc(100vw * 33 / 750);
+            background: #f7736e;
+            transform: translate(-50%,-50%) rotate(45deg);
+        }
+        .vertical .q_detail_incorrect:before{
+            display: inline-block;
+            background-clip: content-box;
+            margin-top: calc(100vw * 15 / 750);
+            margin-bottom: calc(100vw * -3 / 750);
+        }
+        .horizontal .q_detail_incorrect:before{
+            position: absolute;
+        }
+
+        .q_detail_incorrect:after{
+            content: "";
+            top: 50%;
+            left: 50%;
+            width: calc(100vw * 4 / 750);
+            height: calc(100vw * 33 / 750);
+            background: #f7736e;
+            transform: translate(-50%,-50%) rotate(-45deg);
+        }
+        .vertical .q_detail_incorrect:after{
+            display: inline-block;
+            background-clip: content-box;
+            margin-top: calc(100vw * -30 / 750);
+            margin-bottom: calc(100vw * -15 / 750);
+        }
+        .horizontal .q_detail_incorrect:after{
+            position: absolute;
+        }
+
+        .horizontal input[type="radio"] {
+            display: none;
+        }
+
+        .vertical .radio-text {
+            display: block;
+            margin-top: 30px;
+        }
+
+        input[type="radio"]:not(:checked) + .radio-text:before {
+            border-color: #d1cfc3;
+        }
+
+        input[type="radio"]:checked + .radio-text:before {
+            border-color: #3783c1;
+            background-color: #3783c1;
+        }
+
+        * {
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-user-drag: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        .vertical u {
+            text-underline-position: left;
+            text-underline-offset: calc(-100vw * 45 / 750 );
+        }
+
+        .vertical rt {
+            position: relative;
+            right: -.5em;
+            transform: translateX(.1em);
+        }
+        {if $isIOS}
+        .vertical rt {
+            transform: translateX(-.3em);
+        }
+        {/if}
+
+        .vertical_answer_box {
+            display: inline-block;
+            min-height: 200px;
+            min-width: 1.5em;
+            border: 1px #676767 solid;
+        }
+
+        .horizontal_number {
+            text-combine-upright: all;
+            font-size: 1em;
+        }
+
+        @media screen and (max-width:490px) {
+	        #test_index{
+            width: 100%;
+            height: calc(100vw * 90 / 750);
+            background-color: #edf1f4;
+            overflow: hidden;
+        }
+        
+        #test_index{
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #test_index p{
+            text-align: center;
+            font-weight: bold;
+        }
+        #test_footer {
+	        height: 0px;
+        }
+        #test_footer p{
+	        position:fixed;
+	        right: 0px;
+	        bottom: 70px;
+	        opacity: 60%; 
+            width: calc(100vw * 150 / 750);
+            height: calc(100vw * 75 / 750);
+            margin: calc(100vw * 5 / 750) auto 0 ;
+            line-height: calc(100vw * 75 / 750);
+            text-align: center;
+            background-color: #ffcc01;
+            border-radius: calc(100vw * 40 / 750) 0 0 calc(100vw * 40 / 750);
+            font-weight: bold;
+        }
+        }
+        
+        @media screen and (min-width: 500px) {
+	body {
+		width: 90%;
+	}
+    #test_index {
+	height: 80px;
+}
+#test_detail.horizontal {
+    width: 80%;
+    min-width: 80%;
+    height: 90%;
+    overflow: scroll;
+    background-color: #ffffff;
+    margin: 0 auto;
+    display: block;
+}
+#test_detail.vertical {
+    width: 100%;
+    min-width: 100%;
+    height: 90%;
+    overflow: scroll;
+    background-color: #ffffff;
+    text-orientation: upright;
+    writing-mode: vertical-rl;
+    padding: 20px;
+    overflow-y: hidden;
+}
+
+.q_box {
+    width: 100%;
+    min-width: 100%;
+    padding: 20px;
+}
+.horizontal .q_index {
+    padding-bottom: 25px;
+    font-weight: bold;
+    font-size: 16px;
+}
+.horizontal .q_detail {
+    padding-bottom: 25px;
+    font-size: 17px;
+}
+
+.horizontal .q_answer {
+    padding-bottom: 30px;
+}
+
+.horizontal .radio-text:before {
+    margin-right: 15px;
+    margin-top: 0px;
+    vertical-align: middle;
+    box-sizing: content-box;
+}
+.radio-text:before {
+    content: "";
+    display: inline-block;
+    width: 15px;
+    height: 15px;
+    border-width: 3px;
+    border-style: solid;
+    border-radius: 50%;
+    padding: 8px;
+    background-clip: content-box;
+    box-sizing: content-box;
+}
+
+#test_footer {
+    position: fixed;
+    top:;
+    bottom: 0;
+    display: block;
+    height: 10px;
+    width: 100%;
+}
+    
+#test_footer #back_button {
+	position: fixed;
+    bottom: 10px;
+    left: 15px;
+    width: 50px;
+    height: 50px;
+    line-height: 50px;
+    text-align: center;
+    background-color: #c4c4c7;
+    border-radius: 15px;
+    font-weight: bold;
+    opacity: 70%;
+}
+#test_footer p {
+    position: fixed;
+    right: 0;
+    bottom: 10px;
+    width: 180px;
+    height: 50px;
+    margin: 0 auto 0;
+    line-height: 50px;
+    text-align: center;
+    background-color: #ffcc01;
+    border-radius: 25px 0 0 25px;
+    font-weight: bold;
+    opacity: 70%;
+}
+
+.horizontal #score {
+    width: 100%;
+    height: 77px;
+    margin-bottom: 20px;
+}
+
+#score {
+    background-color: #eef2f5;
+    text-align: center;
+    vertical-align: middle;
+    line-height: 77px;
+}
+
+.horizontal .q_detail_incorrect {
+    display: inline-block;
+    position: relative;
+    width: 33px;
+    margin-right: 6px;
+    margin-left: 10px;
+    vertical-align: middle;
+}
+
+.q_detail_incorrect:before {
+    content: "";
+    top: 50%;
+    left: 50%;
+    width: 4px;
+    height: 33px;
+    background: #f7736e;
+    transform: translate(-50%,-50%) rotate(45deg);
+}
+
+.q_detail_incorrect:after {
+    content: "";
+    top: 50%;
+    left: 50%;
+    width: 4px;
+    height: 33px;
+    background: #f7736e;
+    transform: translate(-50%,-50%) rotate(-45deg);
+}
+
+.horizontal .radio-label_correct:before {
+    margin-left: 14px;
+    margin-top: 10px;
+}
+.radio-label_correct:before {
+    content: "";
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-width: 3px;
+    border-style: solid;
+    border-radius: 50%;
+    border-color: #3280c9;
+    background-color: #3280c9;
+    background-clip: content-box;
+}
+
+.radio-label_incorrect {
+    background-color: #ffc7c6;
+    border-radius: 20px;
+}
+
+.horizontal .radio-label_incorrect:before {
+    margin-left: 14px;
+    margin-top: 10px;
+}
+.radio-label_incorrect:before {
+    content: "";
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-width: 3px;
+    border-style: solid;
+    border-radius: 50%;
+    border-color: #f7736e;
+    background-color: #f7736e;
+    background-clip: content-box;
+}
+
+#test_detail.vertical {
+    text-orientation: upright;
+    writing-mode: vertical-rl;
+    padding: 20px;
+    overflow-y: hidden;
+}
+
+.vertical .q_index {
+    padding-left: 20px;
+    padding-right: 20px;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.vertical .q_detail {
+    padding-left: 20px;
+    padding-top: 7px;
+    text-indent: 0;
+    font-size: 17px;
+}
+
+.vertical .q_answer {
+    padding-left: 40px;
+}
+
+.vertical u {
+    text-underline-position: left;
+    text-underline-offset: -24px;
+    font-size: 17px;
+}
+
+.vertical #score {
+    height: 100%;
+    width: 77px;
+}
+.vertical .q_detail_incorrect:before {
+    display: inline-block;
+    background-clip: content-box;
+    margin-top: 15px;
+    margin-bottom: -4px;
+}
+.vertical .q_detail_incorrect:after {
+    display: inline-block;
+    background-clip: content-box;
+    margin-top: -30px;
+    margin-bottom: -15px;
+}
+.vertical .radio-text {
+    display: block;
+    margin-top: 50px;
+}
+
+.vertical .q_detail_correct:before {
+    display: inline-block;
+    background-clip: content-box;
+    margin-top: 15px;
+    margin-bottom: -4px;
+}
+.vertical .q_detail_correct:after {
+    display: inline-block;
+    background-clip: content-box;
+    margin-top: -30px;
+    margin-bottom: -15px;
+}
+
+}
+
+    </style>
+</head>
+
+<body>
+    <section id="test_index">
+        <p>{$jsonQuiz.title}</p>
+    </section>
+
+    {assign var=questions value=$data.questions}
+    <section id="test_detail" class="{if $isVertical}vertical{else}horizontal{/if}">
+        {if !$isVertical}<article class="q_box">{/if}
+
+        <p id="score"><span id="get_score">{$getScore}点</span>／<span id="total_score">{$data.total}点</span></p>
+        {section name=question start=0 loop=$questions step=1}
+
+        {assign var=correctRate value='-'}
+        {if $questions[question].question_type != 'page_break_item' && isset($correctAnswerRates[$questions[question].question_id])}
+            {assign var=correctRate value=$correctAnswerRates[$questions[question].question_id]}
+        {/if}
+
+        {if $questions[question].question_type == 'page_break_item'}
+        <p class="q_index">
+            {$questions[question].question_text}
+        </p>
+        {elseif $questions[question].question_type == "vertical_multiple_choice_question" || $questions[question].question_type == "multiple_choice_question"}
+        【 正答率 {$correctRate} % 】
+        {if in_array($questions[question].question_id,$CAQuestion)}
+        <p class="q_detail q_detail_correct">
+            （<span class="horizontal_number">{$questions[question].question_no}</span>）{$questions[question].question_text}
+        </p>
+        {else}
+        <p class="q_detail"><span class="q_detail_incorrect"></span>
+            （<span class="horizontal_number">{$questions[question].question_no}</span>）{$questions[question].question_text}
+        </p>
+        {/if}
+
+        <p class="q_answer">
+            {section name=question_ansewer start=0 loop=$questions[question].answers step=1}
+            {if $questions[question].answers[question_ansewer].weight == 100}
+                <label class="radio-label radio-label_correct">
+            {elseif $questions[question].user_answer==$questions[question].answers[question_ansewer].value &&  $questions[question].answers[question_ansewer].weight == 0}
+                <label class="radio-label radio-label_incorrect">
+            {else}
+                <label class="radio-label radio-label_other">
+            {/if}
+                    <span class="radio-text">{$questions[question].answers[question_ansewer].answer_text}</span></label>
+            {/section}
+        </p>
+        {elseif $questions[question].question_type == "vertical_short_answer_question" || $questions[question].question_type == "short_answer_question"}
+        【 正答率 {$correctRate} % 】
+        {if in_array($questions[question].question_id,$CAQuestion)}
+        <p class="q_detail q_detail_correct">
+            （<span class="horizontal_number">{$questions[question].question_no}</span>）{$questions[question].question_text}
+        </p>
+        <div class="q_answer q_answer_input_type">
+            {if $isVertical}
+            <div class="vertical_answer_box">{$questions[question].user_answer}</div>
+            {else}
+            <input type="text" value="{$questions[question].user_answer}" readonly />
+            {/if}
+        </div>
+        {else}
+        <p class="q_detail"><span class="q_detail_incorrect"></span>
+            （<span class="horizontal_number">{$questions[question].question_no}</span>）{$questions[question].question_text}
+        </p>
+        <div class="q_answer q_answer_input_type">
+            {if $isVertical}
+            <div class="vertical_answer_box">{$questions[question].user_answer}</div>
+            {else}
+            <input type="text" value="{$questions[question].user_answer}" readonly />
+            {/if}
+            <p style="color: #c00">
+                {$questions[question].answers[0].answer_text}
+                {if !empty($questions[question].other_answers)}
+                    {assign var=other_answers value=$questions[question].other_answers}
+                    <br />
+                    【別解】<br />
+                    {section name=index start=0 loop=$other_answers step=1}
+                        {$other_answers[index]}<br />
+                    {/section}
+                {/if}
+            </p>
+        </div>
+
+        {/if}
+        {/if}
+        {/section}
+
+        {if !$isVertical}</article>{/if}
+    </section>
+    <section id="test_footer">
+        {if $isTeacher}
+        <p onclick="window.close()">閉じる</p>
+        {else}
+        <p onclick="location.href='./quiz_detail.php?quiz_id={$jsonQuiz.id}'">戻る</p>
+        {/if}
+    </section>
+
+</body>
+</html>

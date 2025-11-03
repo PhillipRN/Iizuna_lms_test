@@ -1,0 +1,81 @@
+<!doctype html>
+<html>
+<head>
+    {include file='_gtag.html'}
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex">
+    <title>プロフィール</title>
+
+    {include file='_favicon.html'}
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- link -->
+    <link rel="stylesheet" href="../common/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../student/common/style/common.css?20230402">
+    <link href="https://fonts.googleapis.com/css?family=Cormorant+Garamond:400,400i,500,500i,600,600i,700,700i" rel="stylesheet">
+</head>
+
+<body>
+<header>
+    <article id="header_title">
+        <h1>プロフィール</h1>
+    </article>
+</header>
+<main>
+    <section>
+        <article class="center">
+            <div class="webForm confirm">
+                <table>
+                    <tr>
+                        <th>ログインID</th>
+                        <td>{$data->login_id}</td>
+                    </tr>
+                    <tr>
+                        <th>学校名</th>
+                        <td>{$data->school_name}</td>
+                    </tr>
+                    <tr>
+                        <th>学年</th>
+                        <td>{$data->school_grade}</td>
+                    </tr>
+                    <tr>
+                        <th>クラス</th>
+                        <td>{$data->school_class}</td>
+                    </tr>
+                    <tr>
+                        <th>学籍番号</th>
+                        <td>{$data->student_number}</td>
+                    </tr>
+                    <tr>
+                        <th>氏名</th>
+                        <td>{$data->name}</td>
+                    </tr>
+                    <tr>
+                        <th>ニックネーム</th>
+                        <td>{$data->nickname}</td>
+                    </tr>
+                </table>
+                <button type="button" class="btn btn-light" onclick="location.href='profile_change.php'">編集</button>
+            </div>
+
+            <div class="profile_lms_codes">
+                <table>
+                    <tr>
+                        <th>登録済みコード名</th>
+                        <td>
+                            {foreach $lmsCodes as $lmsCode name='loop'}
+                            {$lmsCode.name}<br />
+                            {/foreach}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <div>
+                <button type="button" class="btn btn-secondary" onclick="location.href='index.php'">戻る</button>
+            </div>
+        </article>
+    </section>
+</main>
+</body>
+</html>

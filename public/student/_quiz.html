@@ -1,0 +1,589 @@
+<!doctype html>
+<html>
+<head>
+    {include file='_gtag.html'}
+
+    {include file='_favicon.html'}
+
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- link -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Cormorant+Garamond:400,400i,500,500i,600,600i,700,700i" rel="stylesheet">
+    <link rel="stylesheet" href="../common/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="common/style/test.css?250417">
+
+    <!-- scripts -->
+    <script>
+    function sendTestDialog() {
+        bootbox.confirm({
+            centerVertical: true,
+            closeButton: false,
+            message: '解答を送信してテストを終了します。よろしいですか？',
+            callback: function(result) {
+                if (result) sendTest();
+            }
+        });
+    }
+
+    function sendTest() {
+        let formData = {
+            "answers": []
+        }
+        let question_quantity = $(".q_answer").length;
+        for(let i=0;i<question_quantity;i++){
+            let question_id = $(".q_answer:eq("+i+") input").eq(0).attr("name")
+            let input_type = $(".q_answer:eq("+i+") input").eq(0).attr("type")
+            let user_answer = '';
+
+            if ($(".answer"+question_id).length == 0) {
+                bootbox.alert({
+                    centerVertical: true,
+                    message: '回答データが取得できませんでした。(question_id: ' + question_id + ')'
+                });
+                return false;
+            }
+
+            if (input_type == "radio") {
+                let checkedObject = $(".answer"+question_id+":checked");
+                if (checkedObject.length != 0) {
+                    user_answer = checkedObject.val();
+                }
+            } else {
+                user_answer = $(".answer"+question_id).val();
+            }
+
+            let answer = {
+                "question_id":question_id,
+                "user_answer":user_answer
+            }
+            formData["answers"].push(answer);
+        }
+        formData["quiz_id"] = '{$quiz_id}';
+        formData["is_expired"] = {$is_expired};
+        
+        // 回答データをローカルストレージに保存
+        saveQuizSubmissionToLocalStorage(formData.quiz_id, formData);
+
+        $('#send_button').hide();
+
+        $.ajax({
+            url: "quiz_register.php",
+            type: "post",
+            data: formData,
+            timeout: 30000,
+            cache: false, // キャッシュを無効化
+            headers: {
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+                "Pragma": "no-cache",
+                "Expires": "0"
+            }
+        })
+        .done(function(result) {
+            try {
+                if (result.error != 0)
+                {
+                    bootbox.alert({
+                        centerVertical: true,
+                        message: "回答の送信時にエラーが発生しました。(エラーコード : " + result.error + ")"
+                    });
+                    return false;
+                }
+
+                if (result.result_id > 0)
+                {
+                    // 送信成功したのでローカルストレージから削除
+                    removeQuizSubmissionFromLocalStorage(formData.quiz_id);
+                    
+                    // 結果IDの存在確認
+                    $.ajax({
+                        url: "check_result_exists.php",
+                        type: "get",
+                        data: { id: result.result_id },
+                        dataType: "json",
+                        timeout: 10000,
+                        cache: false
+                    })
+                    .done(function(response) {
+                        if (response.exists) {
+                            // 結果画面に遷移
+                            window.location.href = 'quiz_result.php?id=' + result.result_id;
+                        } else {
+                            bootbox.alert({
+                                centerVertical: true,
+                                message: "結果の登録に問題が発生しました。再度テストに挑戦してください。"
+                            });
+                        }
+                    })
+                    .fail(function() {
+                        // 結果画面に遷移（エラーハンドリングはquiz_result.phpで行う）
+                        window.location.href = 'quiz_result.php?id=' + result.result_id;
+                    });
+                    return;
+                }
+                else
+                {
+                    bootbox.alert({
+                        centerVertical: true,
+                        message: "結果の登録時にエラーが発生しました。(エラーコード : " + result.error + ")"
+                    });
+                    return false;
+                }
+
+            } catch (e) {
+                bootbox.alert({
+                    centerVertical: true,
+                    message: "データ取得時にエラーが発生しました。(" + e + ")"
+                });
+            }
+        })
+        .fail(function (jqXHR, textStatus, errorThrown) {
+            var errorMessage = '';
+
+            switch (textStatus)
+            {
+                case 'timeout':
+                    errorMessage = '回答の送信がタイムアウトしました。';
+                    break;
+                case 'error':
+                    errorMessage = '回答の送信中にエラーが発生しました。';
+                    break;
+                case 'abort':
+                    errorMessage = '回答の送信中に通信が中断されました。';
+                    break;
+                case 'parsererror':
+                    errorMessage = '回答送信後のデータの取得に失敗しました。';
+                    break;
+                default:
+                    errorMessage = 'その他のエラーが発生しました。(' + jqXHR.status + ' : ' + textStatus + ')';
+                    break;
+            }
+
+            bootbox.alert({
+                centerVertical: true,
+                message: errorMessage
+            });
+        })
+        .always(function() {
+            $('#send_button').show();
+        });
+    }
+
+    function exitQuestion() {
+        bootbox.confirm({
+            centerVertical: true,
+            closeButton: false,
+            message: 'テストを終了して戻ります。よろしいですか？',
+            callback: function (result) {
+                if (result) {
+                    location.href = './quiz_detail.php?quiz_id={$quiz_id}';
+                }
+            }
+        });
+    }
+    </script>
+    <script src="../common/scripts/jquery-3.6.0.min.js"></script>
+    <script src="common/script/chart.min.js"></script>
+    <script src="common/script/common.js?202303292200"></script>
+    <script src="../common/bootstrap/js/bootstrap.min.js"></script>
+    <script src="common/script/bootbox.all.min.js"></script>
+    <script src="common/script/quiz_submission_recovery.js"></script>
+    <script type="text/javascript">
+        $(function () {
+            $('.vertical_answer_box').on('input', function () {
+                let question_id = $(this).data('question_id');
+                $('#question_answer_' + question_id).val( $(this).html() );
+            });
+
+{if $countDownSeconds > 0 && $isPreview == false}
+            // 制限時間がきたら強制送信
+            setTimeout(sendTest, {$countDownSeconds} * 1000);
+{/if}
+        });
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+    html,body{
+        overflow-y: hidden;
+    }
+    #test_index,#test_footer{
+        width: 100%;
+        height: calc(100vw * 100 / 750);
+        background-color: #edf1f4;
+        
+    }
+    #test_index{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+    }
+    #test_index p{
+        text-align: center;
+        font-weight: bold;
+    }
+    #test_footer {
+        position: fixed;
+        bottom: 0;
+        display: block;
+        height: calc(100vw * 110 / 750);
+    }
+    #test_footer p{
+        width: calc(100vw * 330 / 750);
+        height: calc(100vw * 80 / 750);
+        margin: 0 auto 0;
+        line-height: calc(100vw * 80 / 750);
+        text-align: center;
+        background-color: #ffcc01;
+        border-radius: calc(100vw * 25 / 750);
+        font-weight: bold;
+    }
+    #test_footer #back_button{
+        position: fixed;
+        bottom: 10px;
+        left: 15px;
+        width: 50px;
+        height: 50px;
+        line-height: 50px;
+        text-align: center;
+        background-color: #c4c4c7;
+        border-radius: 15px;
+        font-weight: bold;
+    }
+    #test_detail{
+        width: 100%;
+        min-width: 100%;
+        height: calc(100vh - calc(100vw * 240 / 750));
+        overflow: scroll;
+        background-color: #ffffff;
+    }
+    #test_detail.vertical{
+        text-orientation: upright;
+        writing-mode: vertical-rl;
+        padding: calc(100vw * 50 / 750) calc(100vw * 50 / 750) 90px calc(100vw * 50 / 750);
+        overflow-y: hidden;
+    }
+    
+    #test_detail.horizontal{
+        overflow-x: hidden;
+        padding-bottom: calc(100vw * 110 / 750);
+    }
+    .q_box{
+        width: 100%;
+        min-width: 100%;
+        padding: calc(100vw * 50 / 750);
+    }
+    .vertical .q_index{
+        padding-left: calc(100vw * 70 / 750);
+        padding-right: calc(100vw * 70 / 750);
+        font-weight: bold;
+    }
+    .vertical .q_detail{
+        padding-left: calc(100vw * 25 / 750);
+    }
+    .vertical .q_answer{
+        padding-left: calc(100vw * 70 / 750);
+        padding-top: calc(100vw * 115 / 750);
+    }
+    .vertical .radio-label {
+        display: block;
+        margin-left: calc(100vw * 10 / 750);
+    }
+    .horizontal .q_index{
+        padding-bottom: calc(100vw * 50 / 750);
+        font-weight: bold;
+    }
+    .horizontal .q_detail{
+        padding-bottom: calc(100vw * 25 / 750);
+    }
+    .horizontal .q_answer{
+        padding-bottom: calc(100vw * 50 / 750);
+    }
+    .horizontal .q_answer input{
+        width: 98%;
+    }
+    .horizontal .radio-label {
+        display: block;
+        margin-bottom: calc(100vw * 10 / 750);
+    }
+
+    input[type="radio"] {
+        display: none;
+    }
+
+    .radio-text:before {
+        content: "";
+        display: inline-block;
+        width: calc(100vw * 20 / 750);
+        height: calc(100vw * 20 / 750);
+        border-width: calc(100vw * 4 / 750);
+        border-style: solid;
+        border-radius: 50%;
+        padding: calc(100vw * 5 / 750);
+        background-clip: content-box;
+        box-sizing: content-box;
+    }
+    .vertical .radio-text:before {
+        margin-top: calc(-100vw * 69 / 750);
+        margin-bottom: calc(100vw * 31 / 750);
+        box-sizing: content-box;
+    }
+    .horizontal .radio-text:before {
+        margin-right: calc(100vw * 31 / 750);
+        margin-top: calc(100vw * 3 / 750);
+        vertical-align: middle;
+        box-sizing: content-box;
+    }
+
+    input[type="radio"]:not(:checked) + .radio-text:before {
+        border-color: #d1cfc3;
+        box-sizing: content-box;
+    }
+
+    input[type="radio"]:checked + .radio-text:before {
+        border-color: #3783c1;
+        background-color: #3783c1;
+        box-sizing: content-box;
+    }
+
+    * {
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-user-drag: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+    }
+
+    .vertical u {
+        text-underline-position: left;
+        text-underline-offset: calc(-100vw * 45 / 750 );
+    }
+
+    .vertical rt {
+        position: relative;
+        right: -.5em;
+        transform: translateX(.1em);
+    }
+    {if $isIOS}
+    .vertical rt {
+        transform: translateX(-.3em);
+    }
+    {/if}
+
+    .vertical_answer_box {
+        display: inline-block;
+        min-height: 200px;
+        min-width: 1.5em;
+        border: 1px #676767 solid;
+    }
+
+    input, .vertical_answer_box {
+        user-select: auto;
+        -webkit-user-select: auto;
+        -webkit-user-drag: auto;
+        -moz-user-select: auto;
+        -ms-user-select: auto;
+    }
+
+    button, input, select, textarea {
+        font-family : inherit;
+        /*font-size : 100%;{* 縦書きの記述のときにいるかも *}*/
+    }
+
+    .horizontal_number {
+        text-combine-upright: all;
+        font-size: 1em;
+    }
+    
+    @media screen and (min-width: 500px) {
+	body {
+		width: 90%;
+	}
+    #test_index {
+	height: 80px;
+}
+#test_detail.horizontal {
+    width: 80%;
+    min-width: 80%;
+    height: 90%;
+    overflow: scroll;
+    background-color: #ffffff;
+    margin: 0 auto;
+    display: block;
+}
+#test_detail.vertical {
+    width: 100%;
+    min-width: 100%;
+    height: 90%;
+    overflow: scroll;
+    background-color: #ffffff;
+    text-orientation: upright;
+    writing-mode: vertical-rl;
+    padding: 20px;
+    overflow-y: hidden;
+}
+
+.q_box {
+    width: 100%;
+    min-width: 100%;
+    padding: 20px;
+}
+.horizontal .q_index {
+    padding-bottom: 25px;
+    font-weight: bold;
+    font-size: 16px;
+}
+.horizontal .q_detail {
+    padding-bottom: 25px;
+    font-size: 17px;
+}
+
+.horizontal .q_answer {
+    padding-bottom: 30px;
+}
+
+.horizontal .radio-text:before {
+    margin-right: 15px;
+    margin-top: 0px;
+    vertical-align: middle;
+    box-sizing: content-box;
+}
+.radio-text:before {
+    content: "";
+    display: inline-block;
+    width: 15px;
+    height: 15px;
+    border-width: 3px;
+    border-style: solid;
+    border-radius: 50%;
+    padding: 8px;
+    background-clip: content-box;
+    box-sizing: content-box;
+}
+
+#test_footer {
+    position: -webkit-fixed;
+    position: fixed;
+    bottom: 0px;
+    display: block;
+    height: 10px;
+    width: 100%;
+    
+}
+    
+#test_footer #back_button {
+	position: -webkit-fixed;
+	position: fixed;
+    bottom: 10px;
+    left: 15px;
+    width: 50px;
+    height: 50px;
+    line-height: 50px;
+    text-align: center;
+    background-color: #c4c4c7;
+    border-radius: 15px;
+    font-weight: bold;
+    opacity: 70%;
+    
+}
+#test_footer p {
+	position: -webkit-fixed;
+    position: fixed;
+    right: 0;
+    bottom: 10px;
+    width: 180px;
+    height: 50px;
+    margin: 0 auto 0;
+    line-height: 50px;
+    text-align: center;
+    background-color: #ffcc01;
+    border-radius: 25px 0 0 25px;
+    font-weight: bold;
+    opacity: 70%;
+    z-index: 999;
+    transform: translateZ(1px);
+}
+
+
+
+.vertical .q_index {
+    padding-left: 20px;
+    padding-right: 20px;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.vertical .q_detail {
+    padding-left: 20px;
+    padding-top: 7px;
+    text-indent: 0;
+    font-size: 17px;
+}
+
+.vertical .q_answer {
+    padding-left: 40px;
+    padding-top: 150px;
+}
+
+.vertical u {
+    text-underline-position: left;
+    text-underline-offset: -24px;
+    font-size: 17px;
+}
+
+
+}
+    </style>
+</head>
+
+<body>
+    <section id="test_index">
+        <p>{$title}</p>
+    </section>
+
+    {assign var=questions value=$data.questions}
+    <section id="test_detail" class="{if $isVertical}vertical{else}horizontal{/if}">
+        {if !$isVertical}<article class="q_box">{/if}
+
+        {section name=question start=0 loop=$data.questions step=1}
+        {if $questions[question].question_type == 'page_break_item'}
+        <p class="q_index">
+            {$questions[question].question_text}
+        </p>
+        {elseif $questions[question].question_type == "vertical_multiple_choice_question" || $questions[question].question_type == "multiple_choice_question"}
+        <p class="q_detail">
+            （<span class="horizontal_number">{$questions[question].question_no}</span>）{$questions[question].question_text}
+        </p>
+        <p class="q_answer">
+            {section name=question_ansewer start=0 loop=$questions[question].answers step=1}
+                <label class="radio-label"><input class="answer{$questions[question].question_id}" type="radio" name="{$questions[question].question_id}" value="{$questions[question].answers[question_ansewer].answer_text}"><span class="radio-text">{$questions[question].answers[question_ansewer].answer_text}</span></label>
+            {/section}
+        </p>
+        {elseif $questions[question].question_type == "vertical_short_answer_question" || $questions[question].question_type == "short_answer_question"}
+        <p class="q_detail">
+            （<span class="horizontal_number">{$questions[question].question_no}</span>）{$questions[question].question_text}
+        </p>
+        <div class="q_answer">
+            {if $isVertical}
+            <input class="answer{$questions[question].question_id}" type="hidden" name="{$questions[question].question_id}" id="question_answer_{$questions[question].question_id}">
+            <div class="vertical_answer_box" data-question_id="{$questions[question].question_id}" contenteditable="true"></div>
+            {else}
+            <input class="answer{$questions[question].question_id}" type="text" name="{$questions[question].question_id}">
+            {/if}
+        </div>
+        {/if}
+        {/section}
+
+        {if !$isVertical}</article>{/if}
+    </section>
+    <section id="test_footer">
+    {if $isPreview}
+        <p onclick="window.close()">閉じる</p>
+    {else}
+        {if $isAnswered}<div id="back_button" onclick="exitQuestion()">戻る</div>{/if}
+        <p onclick="sendTestDialog()" id="send_button">回答を送信する</p>
+    {/if}
+    </section>
+</body>
+</html>

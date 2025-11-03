@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    {include file='_gtag.html'}
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex">
+    <title>iizunaLMS</title>
+
+    {include file='_favicon.html'}
+
+    <link rel="stylesheet" href="../common/styles/reset.css" type="text/css">
+    <link rel="stylesheet" href="../common/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="./common/styles/layout.css?20240120" type="text/css">
+    <link rel="stylesheet" href="./common/styles/onigiri_quiz.css" type="text/css">
+    <script src="../common/scripts/jquery-3.6.0.min.js"></script>
+
+    <script type="text/javascript">
+        let stages = {$stages|json_encode};
+        let genreNames = {$genreNames};
+        let noStages = {$noStages};
+    </script>
+
+    <script type="text/javascript">
+        $(function() {
+            $('#learningRangeClass').change(changeClass);
+
+            $('#genre_1').change(changeGenre);
+            $('#genre_2').change(changeGenre);
+            $('#genre_3').change(changeGenre);
+            $('#genre_4').change(changeGenre);
+            $('#learning_range_level_1').change(changeLearningRangeLevel);
+            $('#learning_range_level_2').change(changeLearningRangeLevel);
+            $('#learning_range_level_3').change(changeLearningRangeLevel);
+            $('#learning_range_level_4').change(changeLearningRangeLevel);
+            $('#stage_1').change(changeStage);
+            $('#stage_2').change(changeStage);
+            $('#stage_3').change(changeStage);
+            $('#stage_4').change(changeStage);
+            $('.addButton').click(addProblem);
+
+            if (!noStages) $('#genre_1').trigger('change');
+        });
+
+        function changeClass() {
+            window.location.href = './onigiri_quiz_choice.php?lcid=' + $(this).val();
+        }
+
+        function changeGenre() {
+            $('#problem_list tbody').children().remove();
+
+            let no = $(this).data('no');
+            let genre = $(this).val();
+
+            if (genre == '') {
+                $('#learning_range_level_' + no).children().remove();
+                $('#learning_range_level_' + no).append('<option value="">-</option>');
+                $('#stage_' + no).children().remove();
+                $('#stage_' + no).append('<option value="">-</option>');
+                changeStage();
+                return;
+            }
+
+            let mylevels = (stages[genre]) ? stages[genre] : [];
+
+            $('#learning_range_level_' + no).children().remove();
+
+            if (mylevels.length == 0) {
+                $('#learning_range_level_' + no).append('<option value="">-</option>');
+
+                $('#stage_' + no).children().remove();
+                $('#stage_' + no).append('<option value="">-</option>');
+                return;
+            }
+
+            for (var level in mylevels)
+            {
+                var levelString = level;
+
+                if (genreNames[genre] && genreNames[genre][level]) {
+                    levelString = genreNames[genre][level];
+                } else if (level == 0) {
+                    levelString = '-';
+                }
+
+                $('#learning_range_level_' + no).append('<option value="' + level + '">' + levelString + '</option>');
+            }
+
+            $('#learning_range_level_' + no).trigger('change');
+        }
+
+        function changeLearningRangeLevel() {
+            let no = $(this).data('no');
+            let genre = $('#genre_' + no).val();
+            let learningRangeLevel = $(this).val();
+            let myStages = (stages[genre] && stages[genre][learningRangeLevel]) ? stages[genre][learningRangeLevel] : [];
+
+            $('#stage_' + no).children().remove();
+
+            for (var stage in myStages)
+            {
+                $('#stage_' + no).append('<option value="' + stage + '">Stage ' + stage + '</option>');
+            }
+
+            $('#stage_' + no).trigger('change');
+        }
+
+        function changeStage() {
+            $('#problem_list tbody').children().remove();
+            let postData = [];
+
+            for (let i=1; i<=4; ++i) {
+                let genre = $('#genre_' + i).val();
+                let learningRangeLevel = $('#learning_range_level_' + i).val();
+                let stage = $('#stage_' + i).val();
+
+                postData.push({ 'genre': genre, 'learning_range_level': learningRangeLevel, 'stage': stage });
+            }
+
+
+            $.ajax({
+                url: 'onigiri_quiz_choice_get_problems.php',
+                type: 'post',
+                data: { 'data': postData },
+                timeout: 30000,
+            })
+            .done(function(result) {
+                if (result.result =='OK')
+                {
+                    for (let i = 0; i < result.records.length; i++)
+                    {
+                        let myId = result.records[i].id;
+                        let myWord = result.records[i].word;
+                        let myMean = result.records[i].mean;
+
+                        $('#problem_list tbody').append(
+                            '<tr>' +
+                            '<td style="width: 200px">' + myWord + '</td>' +
+                            '<td>' + myMean + '</td>' +
+                            '<td style="width: 100px"><button type="button" class="addButton" data-id="' + myId + '" data-word="' + myWord + '" data-meaning="' + myMean + '">追加</button></td>' +
+                            '</tr>\n');
+                    }
+
+                    $('.addButton').click(addProblem);
+
+                    return;
+                } else if (result.error != null)
+                {
+                    $('#errors').html(result.error['message'] + ' (' + result.error['code'] + ')');
+                    return;
+                }
+                else
+                {
+                    alert('エラーが発生しました。');
+                    return;
+                }
+            })
+            .fail(function(result) {
+                alert('エラーが発生しました。');
+                return;
+            });
+
+            return false;
+        }
+
+        function addProblem() {
+            let id = $(this).data('id');
+            let word = $(this).data('word');
+            let meaning = $(this).data('meaning');
+
+            window.opener.addProblem(id, word, meaning);
+        }
+    </script>
+</head>
+<body>
+<div id="quizChoiceWrapper">
+    <div id="errors" class="caution"></div>
+
+    <div style="margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #888;">
+        e-ONIGIRI英単語の範囲グループ <select name="lms_code_id" id="learningRangeClass">
+            {foreach $schoolGroups as $schoolGroup name='loop'}
+            <option value="{$schoolGroup.lms_code_id}" {if $currentLmsCodeId==$schoolGroup.lms_code_id}selected{/if}>{$schoolGroup.name}</option>
+            {/foreach}
+        </select>
+    </div>
+
+    {if $noStages}
+    e-ONIGIRI英単語の範囲設定がされていません。
+    {else}
+    <div style="margin-bottom: 5px">
+
+        <select id="genre_1" data-no="1">
+            {if isset($stages['toeic'])}<option value="toeic">TOEIC</option>{/if}
+            {if isset($stages['english_cert'])}<option value="english_cert">英検</option>{/if}
+            {if isset($stages['junior_high_school'])}<option value="junior_high_school">中学1～3年</option>{/if}
+            {if isset($stages['high_school'])}<option value="high_school">高校1～2年</option>{/if}
+            {if isset($stages['college_common_test'])}<option value="college_common_test">大学受験／共通テスト</option>{/if}
+            {if isset($stages['college_standard'])}<option value="college_standard">大学受験／標準私大</option>{/if}
+            {if isset($stages['college_elite'])}<option value="college_elite">大学受験／難関私大・国公立</option>{/if}
+        </select>
+        　
+        <select id="learning_range_level_1" data-no="1">
+            <option value="">-</option>
+        </select>
+        　
+        <select id="stage_1" data-no="1">
+            <option value="">-</option>
+        </select>
+    </div>
+
+    <div style="margin-bottom: 5px">
+        <select id="genre_2" data-no="2">
+            <option value="">-</option>
+            {if isset($stages['toeic'])}<option value="toeic">TOEIC</option>{/if}
+            {if isset($stages['english_cert'])}<option value="english_cert">英検</option>{/if}
+            {if isset($stages['junior_high_school'])}<option value="junior_high_school">中学1～3年</option>{/if}
+            {if isset($stages['high_school'])}<option value="high_school">高校1～2年</option>{/if}
+            {if isset($stages['college_common_test'])}<option value="college_common_test">大学受験／共通テスト</option>{/if}
+            {if isset($stages['college_standard'])}<option value="college_standard">大学受験／標準私大</option>{/if}
+            {if isset($stages['college_elite'])}<option value="college_elite">大学受験／難関私大・国公立</option>{/if}
+        </select>
+        　
+        <select id="learning_range_level_2" data-no="2">
+            <option value="">-</option>
+        </select>
+        　
+        <select id="stage_2" data-no="2">
+            <option value="">-</option>
+        </select>
+    </div>
+
+    <div style="margin-bottom: 5px">
+        <select id="genre_3" data-no="3">
+            <option value="">-</option>
+            {if isset($stages['toeic'])}<option value="toeic">TOEIC</option>{/if}
+            {if isset($stages['english_cert'])}<option value="english_cert">英検</option>{/if}
+            {if isset($stages['junior_high_school'])}<option value="junior_high_school">中学1～3年</option>{/if}
+            {if isset($stages['high_school'])}<option value="high_school">高校1～2年</option>{/if}
+            {if isset($stages['college_common_test'])}<option value="college_common_test">大学受験／共通テスト</option>{/if}
+            {if isset($stages['college_standard'])}<option value="college_standard">大学受験／標準私大</option>{/if}
+            {if isset($stages['college_elite'])}<option value="college_elite">大学受験／難関私大・国公立</option>{/if}
+        </select>
+        　
+        <select id="learning_range_level_3" data-no="3">
+            <option value="">-</option>
+        </select>
+        　
+        <select id="stage_3" data-no="3">
+            <option value="">-</option>
+        </select>
+    </div>
+
+    <div style="margin-bottom: 25px">
+        <select id="genre_4" data-no="4">
+            <option value="">-</option>
+            <option value="toeic">TOEIC</option>
+            <option value="english_cert">英検</option>
+            <option value="junior_high_school">中学1～3年</option>
+            <option value="high_school">高校1～2年</option>
+            <option value="college_common_test">大学受験／共通テスト</option>
+            <option value="college_standard">大学受験／標準私大</option>
+            <option value="college_elite">大学受験／難関私大・国公立</option>
+        </select>
+        　
+        <select id="learning_range_level_4" data-no="4">
+            <option value="">-</option>
+        </select>
+        　
+        <select id="stage_4" data-no="4">
+            <option value="">-</option>
+        </select>
+    </div>
+    <table id="problem_list" class="table table-bordered">
+        <tbody></tbody>
+    </table>
+    {/if}
+</div>
+</body>
+</html>

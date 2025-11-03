@@ -1,0 +1,73 @@
+/*===========
+.scroll-box
+===========*/
+
+.scroll-box {
+    overflow-x: auto;
+    padding-bottom: 10px;
+    -webkit-overflow-scrolling: touch;
+}
+
+/*===========
+scrollbar
+===========*/
+
+
+/*スクロールバー全体の高さ*/
+
+.scroll-box::-webkit-scrollbar {
+    height: 4px;
+}
+
+/*スクロールバー全体の背景*/
+
+.scroll-box::-webkit-scrollbar-track {
+    background: #eee;
+}
+
+/*スクロールバーの動く部分*/
+
+.scroll-box::-webkit-scrollbar-thumb {
+    background: #aaa;
+    border: none;
+}
+
+/*スクロールバーの動く部分のホバー（マウスオーバー）*/
+
+.scroll-box::-webkit-scrollbar-thumb:hover {
+    background: #999;
+}
+
+/*===========
+table
+===========*/
+
+.scroll-box table {
+    border-collapse: collapse;
+    border-spacing: 0;
+    width: 100%;
+}
+
+.scroll-box th {
+    background: #fff;
+}
+
+.scroll-box th,
+.scroll-box td {
+    box-sizing: content-box !important;
+}
+
+._sticky {
+    position: sticky;
+    left: 0;
+}
+._sticky:before {
+    box-sizing: content-box !important;
+    content: "";
+    position: absolute;
+    top: -1px;
+    left: 0px;
+    width: 100%;
+    height: 100%;
+    border: 1px solid #666;
+}

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    {include file='_gtag.html'}
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex">
+    <title>Student</title>
+
+    {include file='_favicon.html'}
+
+    <link rel="stylesheet" href="../common/styles/reset.css" type="text/css">
+    <link rel="stylesheet" href="../common/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="./common/styles/layout.css?20240120" type="text/css">
+    <script src="../common/scripts/jquery-3.6.0.min.js"></script>
+
+    <script type="text/javascript">
+        $(function() {
+            $('#updateButton').click(updateStudent);
+        });
+        
+        function updateStudent() {
+            let form = $("#updateForm");
+
+            $.ajax({
+                url: 'student_edit_register.php',
+                type: 'post',
+                data: form.serialize(),
+                timeout: 30000,
+            })
+                .done(function(result) {
+                    if (result.result =='OK')
+                    {
+                        alert('登録しました。');
+                        window.location.href = './student.php';
+                        return;
+                    } else if (result.error != null)
+                    {
+                        $('#errors').html(result.error['message'] + ' (' + result.error['code'] + ')');
+                        return;
+                    }
+                    else
+                    {
+                        alert('エラーが発生しました。');
+                        return;
+                    }
+                })
+                .fail(function(result) {
+                    alert('エラーが発生しました。');
+                    return;
+                });
+
+            return false;
+        }
+    </script>
+</head>
+<body>
+<div id="container">
+    <div id="menuArea">
+        <div id="logoArea">
+            <img src="common/images/logo.png" alt="Test Creator LMS" />
+        </div>
+        {include file='_side_menu.html' isJuku=$isJuku current='student'}
+    </div>
+
+    <div id="contentArea">
+        <h2>生徒編集</h2>
+
+        <div id="errors" class="caution"></div>
+        <form method="post" id="updateForm" onsubmit="return false;">
+            {if !empty($data.id)}<input type="hidden" name="id" value="{$data.id}" id="quiz_id" />{/if}
+            <input type="hidden" name="_csrf" value="{$csrf}" />
+            <table class="table table-bordered" style="table-layout: fixed">
+                <tbody>
+                <tr>
+                    <th>氏名</th>
+                    <td><input type="text" name="name" id="name" value="{$data.name}" /></td>
+                </tr>
+                <tr>
+                    <th>学籍番号</th>
+                    <td><input type="text" name="student_number" id="student_number" value="{$data.student_number}" onblur="zen2han(this)" /></td>
+                </tr>
+                <tr>
+                    <th>ログインID</th>
+                    <td>{$data.login_id}</td>
+                </tr>
+                </tbody>
+            </table>
+
+            <div>
+                <button type="button" class="normalButton large" id="updateButton">更新</button>
+            </div>
+        </form>
+
+        <div style="margin-top: 60px;">
+            <a href="student.php">戻る</a>
+        </div>
+    </div>
+</div>
+</body>
+</html>

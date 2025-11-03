@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <meta name="robots" content="noindex">
+    <title>管理画面</title>
+
+    {include file='_favicon.html'}
+
+    <link rel="stylesheet" href="../common/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="./common/style.css?202201292100" type="text/css">
+    <link rel="stylesheet" href="./common/admin.css?202201292100" type="text/css">
+    <script src="../common/scripts/jquery-3.6.0.min.js"></script>
+    <script src="common/scripts/admin.js?202201292100"></script>
+</head>
+<body>
+<p style="margin: 10px;"><a href="javascript:window.history.back()">戻る</a></p>
+<hr />
+<div id="contents">
+    <h1>書籍キー発行</h1>
+    <form method="post" action="registration_key_regist.php" class="mt-5" onsubmit="return submitRegistrationKey()">
+        <div class="mb-3">
+            {if !empty($teacher)}
+            <input type="hidden" name="teacher_id" value="{$teacher.id}" />
+            <input type="hidden" name="title_no" value="{$book.title_no}" />
+            <table class="table table-hover table-bordered">
+                <tbody>
+                <tr>
+                    <th scope="row">学校</th>
+                    <td>{$teacher.school_name}</td>
+                </tr>
+                <tr>
+                    <th scope="row">姓名</th>
+                    <td>{$teacher.name_1} {$teacher.name_2}</td>
+                </tr>
+                <tr>
+                    <th scope="row">書籍</th>
+                    <td>{$book.name}</td>
+                </tr>
+                </tbody>
+            </table>
+            {else}
+            <label class="form-label">書籍</label>
+            <select name="title_no" class="form-select" id="registrationTitleNo">
+                <option value="" selected>---</option>
+                <optgroup label="英語">
+                    {foreach $bookList[0] as $book name='loop'}
+                    <option value="{$book.title_no}">[{$book.title_no}] {$book.name}</option>
+                    {/foreach}
+                </optgroup>
+                <optgroup label="国語">
+                    {foreach $bookList[1] as $book name='loop'}
+                    <option value="{$book.title_no}">[{$book.title_no}] {$book.name}</option>
+                    {/foreach}
+                </optgroup>
+            </select>
+            {/if}
+        </div>
+        <button type="submit" class="btn btn-primary">発行</button>
+    </form>
+</div>
+</body>
+</html>

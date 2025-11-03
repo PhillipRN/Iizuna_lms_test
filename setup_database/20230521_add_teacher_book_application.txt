@@ -1,0 +1,28 @@
+set charset utf8mb4;
+
+BEGIN;
+
+CREATE TABLE teacher_book_application (
+    id BIGINT UNSIGNED AUTO_INCREMENT,
+    teacher_id BIGINT UNSIGNED NOT NULL,
+    title_no INTEGER UNSIGNED NOT NULL,
+    status SMALLINT NOT NULL DEFAULT 0,
+    create_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_date DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB;
+
+CREATE INDEX index_teacher_book_application_teacher_id ON teacher_book_application(teacher_id);
+
+CREATE VIEW teacher_book_application_view AS SELECT tba.*, b.name , t.name_1 AS teacher_name_1, t.name_2 AS teacher_name_2, s.name AS school_name FROM teacher_book_application AS tba INNER JOIN book AS b ON tba.title_no = b.title_no INNER JOIN teacher AS t ON tba.teacher_id = t.id INNER JOIN school AS s ON t.school_id = s.id;
+
+CREATE TABLE teacher_book_application_log (
+    teacher_id BIGINT UNSIGNED NOT NULL,
+    title_no INTEGER UNSIGNED NOT NULL,
+    type SMALLINT NOT NULL DEFAULT 0,
+    create_date DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+CREATE INDEX index_teacher_book_application_log_teacher_id ON teacher_book_application_log(teacher_id);
+
+COMMIT;

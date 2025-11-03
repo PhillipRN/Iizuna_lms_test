@@ -1,0 +1,17 @@
+        <ul class="menu">
+          <li {if $current=='index'}class="current"{/if}><a href="index.php">Main</a></li>
+          <li {if $current=='result'}class="current"{/if}><a href="result.php">Result</a></li>
+          <li {if $current=='student'}class="current"{/if}><a href="student.php">Student</a></li>
+{if $haveOnigiriTicket}
+          <li {if $current=='onigiri_learning_range'}class="current"{/if}><a href="onigiri_learning_range.php">e-ONIGIRI</a></li>
+          <li class="sub {if $current=='onigiri_user'}current{/if}"><a href="onigiri_user.php">英単語UserData</a></li>
+          <li class="sub {if $current=='onigiri_quiz'}current{/if}"><a href="onigiri_quiz.php">英単語テスト作成</a></li>
+{/if}
+          {if $isJuku}<li class="sub {if $current=='student_code'}current{/if}"><a href="student_code.php">Student<br />登録管理(塾)</a></li>{/if}
+        </ul>
+        <ul class="menu secondMenu">
+          <li {if $current=='registration'}class="current"{/if}><a href="registration.php">Books</a></li>
+          <li {if $current=='group'}class="current"{/if}><a href="group.php">Class/Group</a></li>
+            <li {if $current=='lms_ticket'}class="current"{/if}><a href="lms_ticket.php">LMSチケット</a></li>
+          <li {if $current=='logout'}class="current"{/if}><a href="logout.php">LogOut</a></li>
+        </ul>

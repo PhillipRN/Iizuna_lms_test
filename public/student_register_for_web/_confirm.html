@@ -1,0 +1,79 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex">
+    <title>生徒登録</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- link -->
+    <link rel="stylesheet" href="../common/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../student/common/style/common.css?20230326">
+    <link href="https://fonts.googleapis.com/css?family=Cormorant+Garamond:400,400i,500,500i,600,600i,700,700i" rel="stylesheet">
+</head>
+
+<body>
+<header>
+    <article id="header_title">
+        <h1>生徒登録確認</h1>
+    </article>
+</header>
+<main>
+    <section>
+        <article class="center">
+            <div id="errors" class="caution">
+                {foreach $errors as $error name='loop'}
+                {$error|nl2br}<br />
+                {/foreach}
+            </div>
+            <form action="confirm.php" method="post" class="webForm confirm">
+                <input type="hidden" name="_csrf" value="{$csrf}" />
+                <table>
+                    <tr>
+                        <th>ログインID (必須)</th>
+                        <td>
+                            {$params->login_id}
+                            <p style="text-align: left">※このIDは先生が確認できます。</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>パスワード (必須)</th>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <th>学校コード (必須)</th>
+                        <td>{$params->lms_code}</td>
+                    </tr>
+                    <tr>
+                        <th>学校名</th>
+                        <td>{$params->school_name}</td>
+                    </tr>
+                    <tr>
+                        <th>学年</th>
+                        <td>{$params->school_grade}</td>
+                    </tr>
+                    <tr>
+                        <th>クラス</th>
+                        <td>{$params->school_class}</td>
+                    </tr>
+                    <tr>
+                        <th>学籍番号 (必須)</th>
+                        <td>{$params->student_number}</td>
+                    </tr>
+                    <tr>
+                        <th>氏名 (必須)</th>
+                        <td>{$params->name}</td>
+                    </tr>
+                    <tr>
+                        <th>ニックネーム</th>
+                        <td>{$params->nickname}</td>
+                    </tr>
+                </table>
+
+                <button type="button" class="btn btn-secondary" onclick="location.href='index.php'">戻る</button>　
+                <input type="submit" name="submit" class="btn btn-primary" value="登録" />
+            </form>
+        </article>
+    </section>
+</main>
+</body>
+</html>

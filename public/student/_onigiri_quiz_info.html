@@ -1,0 +1,87 @@
+<!doctype html>
+<html>
+<head>
+    {include file='_gtag.html'}
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex">
+    <title>クイズ</title>
+
+    {include file='_favicon.html'}
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- link -->
+    <link rel="stylesheet" href="../common/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="common/style/test.css?250417">
+    <link rel="stylesheet" href="common/style/onigiri_quiz.css?2304281547">
+    <link href="https://fonts.googleapis.com/css?family=Cormorant+Garamond:400,400i,500,500i,600,600i,700,700i" rel="stylesheet">
+
+    <!-- scripts -->
+    <script src="../common/scripts/jquery-3.6.0.min.js"></script>
+    <script src="common/script/chart.min.js"></script>
+    <script src="common/script/common.js?20231209"></script>
+    <script src="../common/bootstrap/js/bootstrap.min.js"></script>
+    <script src="common/script/bootbox.all.min.js"></script>
+    <script>
+        function takeTest(quizId, openDate, expireDate, timeLimit) {
+            if (IsNotOpen(Number(openDate))) {
+                bootbox.alert({
+                    centerVertical: true,
+                    closeButton: false,
+                    message: GetIsNotOpenText(Number(openDate))
+                });
+                return;
+            }
+
+            let dialogMessage = GetDialogMessageForOnigiri(expireDate-0, timeLimit-0)
+
+            bootbox.confirm({
+                centerVertical: true,
+                closeButton: false,
+                message: dialogMessage,
+                callback: function (result) {
+                    if (result) {
+                        window.location.href = 'onigiri_quiz.php?quiz_id=' + quizId
+                    }
+                }
+            });
+        }
+    </script>
+</head>
+
+<body>
+    <header>
+        
+
+    </header>
+    <main class="onigiri_quiz_main">
+        <section class="onigiri_quiz_information">
+            <article style="font-size: larger">
+                テストを始めるよ<br />
+                準備はいい？
+                <div style="display: block;text-align: right;margin-right: 40px;">
+                	<img src="common/images/chara_sake.png" alt="" style="width: 120px;">
+                </div>
+                <hr size="4" style="width: 80%;color: #EA6182;margin: 10px auto;">
+                
+            </article>
+            <article id="header_title">
+            <h2>{$data.title}</h2>
+        </article>
+            <article class="button_area" style="margin-top: 60px;">
+                <div>
+                    {if $isAnswered}
+                    このテストは既に回答しています。
+                    <br />
+                    <br />
+                    {/if}
+                    <button type="button" class="btn btn-primary" style="border-radius: 30px;border: none; background-color: #EA6182;" onclick="takeTest('{$data.id}', '{$data.open_date|strtotime}000', '{$data.expire_date|strtotime}000', '{$data.time_limit*60000}')">始める</button>
+                    <br />
+                    <br />
+                    <button type="button" class="btn btn-secondary" style="border-radius: 30px;background-color: white;color: gray;border:solid 1px gray;" onclick="location.href='index.php'">やめる</button>
+                </div>
+            </article>
+        </section>
+        
+    </main>
+</body>
+</html>

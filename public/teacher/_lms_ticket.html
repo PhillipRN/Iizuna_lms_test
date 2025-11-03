@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    {include file='_gtag.html'}
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex">
+    <title>LMSチケット</title>
+
+    {include file='_favicon.html'}
+
+    <link rel="stylesheet" href="../common/styles/reset.css" type="text/css">
+    <link rel="stylesheet" href="./common/styles/layout.css?20240120" type="text/css">
+    <link rel="stylesheet" href="./common/styles/lms_ticket.css?20240427" type="text/css">
+    <link rel="stylesheet" href="./common/styles/loading.css" type="text/css">
+    <link rel="stylesheet" href="../common/tablesorter/css/theme.default.min.css" type="text/css">
+    <script src="../common/scripts/jquery-3.6.0.min.js"></script>
+    <script src="../common/scripts/jqueryui/jquery-ui.min.js"></script>
+    <script src="../common/scripts/common.js"></script>
+    <script src="../common/scripts/validation.js"></script>
+    <script src="../common/tablesorter/js/jquery.tablesorter.min.js"></script>
+
+    <script type="text/javascript">
+        $(function() {
+            $("#applicationForm").submit(applicationRegister);
+            $('#ticketType').change(changeTicketType);
+            $('#ticketGroups').change(displayTicketCode);
+            $('#getDataButton').on('click', getData);
+
+            $('#ticketType').change();
+        });
+
+        function applicationRegister() {
+            $('#errors').html('');
+
+            let quantity = $("#quantity").val();
+
+            if (!isPositiveInteger(quantity)) {
+                $('#errors').html('チケット数を正しく入力してください。');
+                return false;
+            }
+
+            let form = $("#applicationForm");
+
+            $.ajax({
+                url: 'lms_ticket_register.php',
+                type: 'post',
+                data: form.serialize(),
+                timeout: 30000,
+
+            })
+                .done(function(result) {
+                    if (result.result =='OK')
+                    {
+                        alert('登録しました。');
+                        location.reload();
+                        return;
+                    } else if (result.error != null)
+                    {
+                        $('#errors').html(result.error['message']);
+                        return;
+                    }
+                    else
+                    {
+                        alert('エラーが発生しました。');
+                        return;
+                    }
+                })
+                .fail(function(result) {
+                    alert('エラーが発生しました。');
+                    return;
+                });
+
+            return false;
+        }
+
+        let ticketData = {$ticketDataJson};
+
+        function changeTicketType() {
+            let titleNo = $(this).val();
+            let tickets = ticketData[titleNo]['lms_tickets'];
+
+            let ticketGroupSelect = $('#ticketGroups');
+            ticketGroupSelect.empty();
+
+            $('#ticketCode').html('');
+
+            Object.keys(tickets).forEach(function (ticketKey) {
+                let ticket = tickets[ticketKey];
+
+                let optGroup = $('<optgroup>').attr('label', ticket['title']);
+                ticketGroupSelect.append( optGroup )
+
+                let ticketGroups = ticket['lms_ticket_groups'];
+
+                Object.keys(ticketGroups).forEach(function (ticketGroupKey) {
+                    let ticketGroup = ticketGroups[ticketGroupKey];
+                    optGroup.append( $('<option>').html(ticketGroup['name']).val(ticketGroup['lms_code']) );
+                });
+            });
+
+            ticketGroupSelect.change();
+        }
+
+        function displayTicketCode()
+        {
+            let lmsCode = $(this).val();
+            $('#ticketCode').html(lmsCode);
+        }
+
+        function getData() {
+            let lmsCode = $('#ticketGroups').val();
+            let titleNo = $('#ticketType').val();
+            let isOnigiri = (titleNo == {$onigiriTitleNo}) ? true : false;
+
+            if (lmsCode == null || lmsCode == '') return false;
+
+            $('.loading').show();
+
+            $.ajax({
+                url: 'lms_ticket_user_get.php',
+                type: 'post',
+                data: {
+                    'lms_code': lmsCode,
+                    'title_no': titleNo
+                },
+                timeout: 30000,
+            })
+                .done(function(result) {
+                    if (result.result =='OK')
+                    {
+                        var records = result.records;
+                        console.log(records)
+                        let userList = $('#userList');
+
+                        if (records.length == 0) {
+                            $('#messageArea').html('対象のデータはありませんでした。');
+                            userList.hide();
+                            return false;
+                        }
+                        else
+                        {
+                            userList.show();
+                            let tbody = userList.find('tbody');
+                            tbody.empty();
+
+                            for (var i=0; i<records.length; ++i) {
+                                let record = records[i];
+
+                                var codeCell = '';
+                                let activeSchoolCodes = record['activeSchoolCodes'];
+                                for (var j=0; j<activeSchoolCodes.length; ++j) {
+                                    codeCell += activeSchoolCodes[j];
+                                    if (!isOnigiri) codeCell += '　<input type="button" value="削除" onclick="deleteCode(\'' + record['fullName'] + '\',\'' + record['loginId'] + '\',\'' + activeSchoolCodes[j] + '\')" />'
+                                }
+
+                                tbody.append('<tr><td>' + record['fullName'] + '</td><td>' + record['studentNumber'] + '</td><td>' + record['loginId'] + '</td><td>' + codeCell + '</td></tr>');
+                            }
+
+                            userList.trigger("destroy");
+                            userList.tablesorter({
+                                headers: {
+                                    0: { sorter: false },
+                                    2: { sorter: false },
+                                    3: { sorter: false }
+                                },
+                                emptyTo: 'emptyMax',
+                                sortReset: true
+                            });
+                        }
+                        return false;
+                    } else if (result.error != null)
+                    {
+                        $('#errors').html(result.error['message']);
+                        return false;
+                    }
+                    else
+                    {
+                        alert('エラーが発生しました。');
+                        return false;
+                    }
+                })
+                .fail(function(result) {
+                    alert('エラーが発生しました。');
+                    return false;
+                })
+                .always(function() {
+                    $('.loading').hide();
+                });
+
+            return false;
+        }
+
+        function deleteCode(name, loginId, lmsCode)
+        {
+            let displayName = name != '' ? name : 'ログインID ' + loginId;
+            let message = displayName + ' に登録されているコード ' + lmsCode + " を削除します。\nよろしいですか？"
+            if (confirm(message))
+            {
+                $('.loading').show();
+
+                $.ajax({
+                    url: 'ebook_user_delete_code.php',
+                    type: 'post',
+                    data: { 'login_id': loginId, 'lms_code': lmsCode },
+                    timeout: 30000,
+                })
+                    .done(function(result) {
+                        if (result.result =='OK')
+                        {
+                            alert('削除しました。')
+                            location.reload();
+                            return false;
+                        } else if (result.error != null)
+                        {
+                            alert(result.error['message']);
+                            return false;
+                        }
+                        else
+                        {
+                            alert('エラーが発生しました。');
+                            return false;
+                        }
+                    })
+                    .fail(function(result) {
+                        alert('エラーが発生しました。');
+                        return false;
+                    })
+                    .always(function() {
+                        $('.loading').hide();
+                    });
+
+                return false;
+            }
+        }
+    </script>
+</head>
+<body>
+<div class="loading">
+    <div class="animation"></div>
+</div>
+<div id="container">
+    <div id="menuArea">
+        <div id="logoArea">
+            <img src="common/images/logo.png" alt="Test Creator LMS" />
+        </div>
+{include file='_side_menu.html' isJuku=$isJuku current='lms_ticket'}
+    </div>
+
+    <div id="contentArea">
+        <h2>LMSチケット購入申請<span class="caution" style="font-size: 0.8em; font-weight: normal">　　※有料デジタルコンテンツ採用時のみ使用</span></h2>
+        <form method="post" id="applicationForm">
+            <input type="hidden" name="_csrf" value="{$csrf}" />
+            <table class="separateTable">
+                <tr>
+                    <td>種別</td>
+                    <td>
+                        <select name="title_no">
+                            {foreach $ticketTypes as $ticketType}
+                                <option value="{$ticketType.title_no}">{$ticketType.name}</option>
+                            {/foreach}
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>期限</td>
+                    <td>
+                        <select name="expire_year">
+                            {for $value=0 to 10}
+                               <option value="{$currentYear + $value}">{$currentYear + $value}</option>
+                            {/for}
+                        </select> 年
+                        <select name="expire_month">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                            <option value="9">9</option>
+                            <option value="10">10</option>
+                            <option value="11">11</option>
+                            <option value="12">12</option>
+                        </select> 月 まで
+                    </td>
+                </tr>
+                <tr>
+                    <td>チケット数</td>
+                    <td>
+                        <input type="text" name="quantity" value="" id="quantity" onchange="zen2han(this)" />
+                    </td>
+                </tr>
+            </table>
+            <div id="errors" class="caution"></div>
+
+            <div class="buttonArea">
+                <input type="submit" value="購入申請" class="normalButton" />
+            </div>
+        </form>
+
+
+        <h2 style="margin-top: 50px">LMSチケット一覧</h2>
+        <table class="separateTable">
+            <thead>
+            <tr>
+                <th>LMSチケット（数）</th>
+                <th style="width: 200px">操作</th>
+            </tr>
+            </thead>
+            <tbody>
+            {foreach $ticketTypes as $ticketType}
+            <tr>
+                <td colspan="2">{$ticketType.name}</td>
+            </tr>
+            {foreach $records[$ticketType['title_no']] as $record}
+            <tr>
+                <td>
+                    ・{$record.expire_year}年{$record.expire_month}月まで
+                    {if $record.status == 0}
+                        （申請中）
+                    {else}
+                        （{$record.use_count}/{$record.quantity}）
+                    {/if}
+                </td>
+                <td>
+                    <button class="normalButton small {if $record.status == 0}disabled{/if}" {if $record.status == 1}onclick="location.href='./lms_ticket_group.php?ltid={$record.id}'"{/if}>チケッティング</button>
+                    <button class="normalButton x-small" onclick="location.href='./lms_ticket_update.php?ltid={$record.id}'">操作</button>
+                </td>
+            </tr>
+            {/foreach}
+            {/foreach}
+            </tbody>
+        </table>
+
+        <div style="margin-top: 50px;">
+            <h2>登録者リスト</h2>
+
+            <div id="searchForm">
+                <table class="separateTable">
+                    <tr>
+                        <td>種別</td>
+                        <td>
+                            <select id="ticketType">
+                                {foreach $ticketData as $ticketType name='loop'}
+                                <option value="{$ticketType.title_no}">{$ticketType.name}</option>
+                                {/foreach}
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>チケット</td>
+                        <td>
+                            <select id="ticketGroups">
+                                <option>-</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>コード</td>
+                        <td id="ticketCode"></td>
+                    </tr>
+                </table>
+
+                <div class="buttonArea">
+                    <input type="submit" value="データ取得" class="normalButton" id="getDataButton" />
+                </div>
+            </div>
+
+            <div id="messageArea" style="margin-top: 35px"></div>
+            <table class="separateTable" id="userList" style="margin-top: 35px; display: none">
+                <thead>
+                <tr>
+                    <td style="width: 150px">氏名</td>
+                    <td style="width: 150px">学籍番号</td>
+                    <td style="width: 150px">ログインID</td>
+                    <td>登録コード</td>
+                </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+
+        </div>
+    </div>
+</div>
+</body>
+</html>

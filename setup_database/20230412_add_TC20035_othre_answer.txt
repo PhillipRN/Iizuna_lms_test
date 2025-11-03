@@ -1,0 +1,8 @@
+set charset utf8mb4;
+
+BEGIN;
+
+CREATE TABLE TC20035_other_answer (syomon_no INTEGER UNSIGNED NOT NULL, answer TEXT NOT NULL) ENGINE=InnoDB;
+CREATE INDEX index_TC20035_other_answer ON TC20035_other_answer(syomon_no);
+
+COMMIT;

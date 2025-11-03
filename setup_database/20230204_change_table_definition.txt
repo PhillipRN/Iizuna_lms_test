@@ -1,0 +1,93 @@
+set charset utf8mb4;
+
+BEGIN;
+
+# テーブル定義変更
+ALTER TABLE json_quiz_result MODIFY json_quiz_id BIGINT UNSIGNED NOT NULL;
+ALTER TABLE json_quiz_result MODIFY student_id BIGINT UNSIGNED NOT NULL;
+
+ALTER TABLE school MODIFY lms_code_id BIGINT UNSIGNED NOT NULL;
+ALTER TABLE school_group MODIFY lms_code_id BIGINT UNSIGNED NOT NULL;
+ALTER TABLE try_login MODIFY user_id BIGINT UNSIGNED;
+ALTER TABLE json_quiz_result_summary MODIFY json_quiz_id BIGINT UNSIGNED NOT NULL;
+ALTER TABLE json_quiz_result_statistics MODIFY json_quiz_id BIGINT UNSIGNED NOT NULL;
+
+
+ALTER TABLE school MODIFY lms_code_id BIGINT UNSIGNED NOT NULL AFTER phone;
+ALTER TABLE school ADD COLUMN is_paid TINYINT NOT NULL DEFAULT 0 AFTER lms_code_id;
+
+DROP VIEW school_view;
+CREATE VIEW school_view AS SELECT s.*, lc.lms_code FROM school AS s INNER JOIN lms_code AS lc ON s.lms_code_id = lc.id;
+
+
+# 生徒と LMS_CODE の紐づけ
+CREATE TABLE student_lms_code (
+    student_id BIGINT UNSIGNED NOT NULL,
+    lms_code_id BIGINT UNSIGNED NOT NULL,
+    create_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(student_id, lms_code_id)
+) ENGINE=InnoDB;
+
+CREATE INDEX index_student_lms_code_student_id ON student_lms_code(student_id);
+CREATE INDEX index_student_lms_code_lms_code_id ON student_lms_code(lms_code_id);
+
+INSERT INTO student_lms_code (student_id, lms_code_id) SELECT student_id, school.lms_code_id FROM student_school LEFT JOIN school ON school.id = student_school.school_id;
+
+
+DROP VIEW student_school_view;
+DROP TABLE student_school;
+
+
+# 配信
+CREATE TABLE json_quiz_delivery (
+    json_quiz_id BIGINT UNSIGNED NOT NULL,
+    lms_code_id BIGINT UNSIGNED NOT NULL,
+    create_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(json_quiz_id, lms_code_id)
+) ENGINE=InnoDB;
+
+ALTER TABLE json_quiz_delivery ADD COLUMN create_date DATETIME DEFAULT CURRENT_TIMESTAMP;
+
+CREATE INDEX index_json_quiz_delivery_json_quiz_id ON json_quiz_delivery(json_quiz_id);
+
+INSERT INTO json_quiz_delivery (json_quiz_id, lms_code_id) SELECT json_quiz.id, school.lms_code_id FROM json_quiz LEFT JOIN school ON school.id = json_quiz.school_id;
+
+
+ALTER TABLE json_quiz DROP COLUMN school_id;
+
+
+# グループ微調整
+ALTER TABLE school_group ADD COLUMN school_id BIGINT UNSIGNED NOT NULL AFTER id;
+
+UPDATE school_group SET school_id = (SELECT school_id FROM teacher WHERE school_group.teacher_id = teacher.id);
+
+DROP VIEW school_group_view;
+
+CREATE VIEW school_group_view AS SELECT sg.*, lc.lms_code, t.name_1 AS teacher_name_1, t.name_2 AS teacher_name_2 FROM school_group AS sg INNER JOIN lms_code AS lc ON sg.lms_code_id = lc.id INNER JOIN teacher AS t ON sg.teacher_id = t.id;
+
+
+# OnigiriLearningRange
+CREATE TABLE onigiri_learning_range (
+    lms_code_id INT UNSIGNED NOT NULL,
+    genre TEXT NOT NULL,
+    learning_range_level INT DEFAULT 0,
+    stage INT DEFAULT 1,
+    create_date DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+CREATE INDEX index_onigiri_learning_range_lms_code_id ON onigiri_learning_range(lms_code_id);
+
+
+ALTER TABLE school_learning_range ADD COLUMN lms_code_id BIGINT UNSIGNED NOT NULL;
+
+UPDATE school_learning_range SET lms_code_id = (SELECT school.lms_code_id FROM school WHERE school.id = school_learning_range.school_id);
+
+
+INSERT INTO onigiri_learning_range (lms_code_id, genre, learning_range_level, stage) SELECT lms_code_id, genre, learning_range_level, stage FROM school_learning_range;
+
+CREATE VIEW onigiri_learning_range_view AS SELECT olr.*, lc.lms_code FROM onigiri_learning_range AS olr INNER JOIN lms_code AS lc ON olr.lms_code_id = lc.id;
+
+DROP TABLE school_learning_range;
+
+
+COMMIT;

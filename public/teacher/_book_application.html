@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    {include file='_gtag.html'}
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex">
+    <title>Books</title>
+
+    {include file='_favicon.html'}
+
+    <link rel="stylesheet" href="../common/styles/reset.css" type="text/css">
+    <link rel="stylesheet" href="./common/styles/layout.css?20240120" type="text/css">
+    <script src="../common/scripts/jquery-3.6.0.min.js"></script>
+    <script type="text/javascript">
+        $(function() {
+            $('#bookApplicationForm').submit(registrationSubmit);
+        });
+
+        function registrationSubmit() {
+            if (!confirm("選択している書籍を申請します。\nよろしいですか？")) return false;
+
+            let form = $('#bookApplicationForm');
+
+            $('#errors').html('');
+
+            $.ajax({
+                url: 'book_application_register.php',
+                type: 'post',
+                data: form.serialize(),
+                timeout: 30000,
+            })
+            .done(function(result) {
+                if (result.error != null)
+                {
+                    $('#errors').html(result.error['message'] + ' (' + result.error['code'] + ')');
+                    return;
+                }
+                else
+                {
+                    alert('登録しました。');
+                    location.reload();
+                    return;
+                }
+            })
+            .fail(function(result) {
+                alert('エラーが発生しました。');
+                return;
+            });
+
+            return false;
+        }
+
+        function canselApplication(bookId) {
+            if (!confirm("申請を取り消します。\nよろしいですか？")) return false;
+
+            $('#errors').html('');
+
+            $.ajax({
+                url: 'book_application_canceler.php',
+                type: 'post',
+                data: { book_id: bookId },
+                timeout: 30000,
+            })
+                .done(function(result) {
+                    if (result.error != null)
+                    {
+                        $('#errors').html(result.error['message'] + ' (' + result.error['code'] + ')');
+                        return;
+                    }
+                    else
+                    {
+                        alert('取り消しました。');
+                        location.reload();
+                        return;
+                    }
+                })
+                .fail(function(result) {
+                    alert('エラーが発生しました。');
+                    return;
+                });
+
+            return false;
+        }
+    </script>
+</head>
+<body>
+<div id="container">
+    <div id="menuArea">
+        <div id="logoArea">
+            <img src="common/images/logo.png" alt="Test Creator LMS" />
+        </div>
+{include file='_side_menu.html' isJuku=$isJuku current='registration'}
+    </div>
+
+    <div id="contentArea">
+        <div id="applicationBook">
+            <h2>追加書籍申請</h2>
+            <div id="errors" class="caution"></div>
+            <form id="bookApplicationForm">
+                <h3>英語</h3>
+{if empty($bookList[0]) || count($bookList[0]) == 0}
+                申請可能な書籍はありません。
+{else}
+                <table>
+                {foreach $bookList[0] as $book name='loop'}
+                    <tr><td><input type="checkbox" name="title_no[]" value="{$book.title_no}" id="book_0_{$book.title_no}"><label for="book_0_{$book.title_no}"> {$book.name}</label></td></tr>
+                {/foreach}
+                </table>
+{/if}
+                <br />
+                <br />
+
+                <h3>国語</h3>
+{if empty($bookList[1])}
+                申請可能な書籍はありません。
+{else}
+                <table>
+                {foreach $bookList[1] as $book name='loop'}
+                    <tr><td><input type="checkbox" name="title_no[]" value="{$book.title_no}" id="book_1_{$book.title_no}"><label for="book_1_{$book.title_no}"> {$book.name}</label></td></tr>
+                {/foreach}
+                </table>
+{/if}
+{if !empty($bookList[0] || !empty($bookList[1]))}
+                <div class="buttonArea">
+                    <input type="submit" value="申請" class="normalButton" />
+                </div>
+{/if}
+            </form>
+
+            <h2 style="margin-top: 80px">申請一覧</h2>
+{if empty($applicationBookList)}
+            申請中の書籍はありません。
+{else}
+            <div id="bookList">
+                <table>
+                    <tr>
+                        <th style="width: 150px">申請日時</th>
+                        <th>書籍名</th>
+                        <th style="width: 150px">ステータス</th>
+                        <th style="width: 100px">操作</th>
+                    </tr>
+    {foreach $applicationBookList as $book name='loop'}
+                    <tr>
+                        <td>{$book.create_date|date_format:"%g-%m-%d %T"}</td>
+                        <td>{$book.name}</td>
+                        <td style="text-align: center">
+                            {if $book.status == 0}承認済み
+                            {else}申請中{/if}
+                        </td>
+                        <td>{if $book.status != 0}<button type="button" class="normalButton small delete" onclick="canselApplication({$book.id})">取り消し</button>{/if}</td>
+                    </tr>
+    {/foreach}
+                </table>
+            </div>
+{/if}
+        </div>
+    </div>
+</div>
+</body>
+</html>

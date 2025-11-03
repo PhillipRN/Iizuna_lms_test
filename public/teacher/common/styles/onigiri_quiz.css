@@ -1,0 +1,27 @@
+.onigiriQuizCreateButtonArea {
+    margin: 0 0 40px 0;
+}
+
+table#problemList {
+    margin-bottom: 15px;
+}
+
+table#problemList,
+table#problemList th,
+table#problemList td {
+    border-collapse: collapse;
+    border: 1px solid #aaa;
+}
+
+table#problemList th,
+table#problemList td {
+    padding: 5px;
+}
+
+table#problemList tr.selected {
+    background-color: #ccc;
+}
+
+#quizChoiceWrapper {
+    padding: 15px;
+}

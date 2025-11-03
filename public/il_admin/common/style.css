@@ -1,0 +1,371 @@
+a, button {
+    cursor: pointer;
+}
+
+#logo {
+    float: left;
+    padding-right: 10px;
+}
+
+#logo img {
+    height: 50px;
+}
+header {
+    font-weight: bold;
+}
+
+header::after {
+    content: "";
+    display: block;
+    clear: both;
+}
+
+#sectionCondition,
+#numberCondition,
+#midasiNumberCondition,
+#midasiCondition {
+    display: none;
+}
+
+#midasiCondition,
+#chapterCondition {
+    max-height: 400px;
+    padding: 5px 0;
+    overflow: auto;
+    border: 1px solid #ccc;
+}
+
+#loading {
+    display: none;
+    width: 24px
+}
+
+.error {
+    color: #c00;
+}
+
+.hidden {
+    display: none;
+}
+
+.center {
+    text-align: center;
+}
+
+#copyResult {
+    font-weight: bold;
+    font-size: 18px;
+}
+
+#copyRemainTime {
+    font-weight: bold;
+    font-size: 18px;
+}
+
+#createResult {
+    font-weight: bold;
+    font-size: 18px;
+}
+
+#remainTime {
+    font-weight: bold;
+    font-size: 18px;
+}
+
+body {
+    width: 100%;
+    margin: 0 auto;
+    border-top:solid #d28133 8pt;
+    font-family: sans-serif;
+}
+
+#contents {
+    width: 95%;
+    margin: 0 auto;
+    padding: 10px;
+}
+#header {
+    width: 100%;
+}
+
+h1{
+    height: 40px;
+    background-image: url(img/gfmark2.png);
+    background-size:35px 40px;
+    background-repeat: no-repeat;
+    padding: 0px 0px 0px 50px;
+    font-size: 18pt;
+    vertical-align: middle;
+    padding-top: 3px;
+}
+
+#authorize {
+    border: solid 1px black;
+    border-radius: 5px;
+    padding: 20px 15px;
+    margin: 20px 0;
+}
+
+h2 {
+    border-left: solid #d28133 6px;
+    padding-left: 10px;
+    font-size: 20px;
+}
+
+
+select {
+    width: 250px;
+    height: 40px;
+    margin: 30px 3px;
+    padding-left: 10px;
+    border: solid black 1px;
+    background: transparent;
+}
+
+#copyFolderButton {
+    width: 150px;
+    height: 40px;
+    border:solid #986100 1px;
+    border-radius: 5px;
+    background-color: #d28133;
+    color: white;
+    font-size: 17px;
+}
+
+li {
+    margin: 0 10px;
+    font-weight: bold;
+}
+
+#footer {
+    text-align: center;
+    color: white;
+    background-color: #d28133;
+    margin-top: 20px;
+    padding: 1px;
+    font-size: 13px;
+}
+
+.waku {
+    width: 300px;
+    padding: 10px;
+    border: solid 0.5px black;
+}
+
+.loginwaku {
+    width: 300px;
+    padding: 10px;
+    border: none;
+    background-color: #d28133;
+    color: white;
+}
+
+.img {
+    text-align: center;
+}
+
+.bb {
+    margin: 0 auto;
+    width: 110px;
+    height: 40px;
+    border: none;
+    border-radius: 5px;
+    background-color: #d28133;
+    color: white;
+    font-size: 14px;
+    display: block;
+}
+
+#createTestEachClasses ul li {
+    margin-bottom: 10px;
+}
+
+.safari_des{
+    display: none;
+}
+
+
+#createButton {
+    width: 200px;
+    height: 40px;
+    border:solid #986100 1px;
+    border-radius: 5px;
+    background-color: #d28133;
+    color: white;
+    font-size: 17px;
+}
+
+.select_waku {
+    border: solid 1px black;
+}
+
+
+.radio_input {
+    display: none;
+}
+
+.radio_label {
+    display: inline-block;
+    background-color:#fff7eb;
+    padding: 10px;
+    width: 200px;
+    border: 1px solid #d28133;
+    border-left: 3px solid #d28133;
+    border-radius: 5px;
+    color: #d28133;
+    text-align: center;
+    font-weight: bold;
+    transition: .5s;
+}
+
+
+.radio_input:checked + .radio_label {
+    background-color: #d28133;
+    border: solid 1px #986100;
+    border-left:solid 3px #986100;
+    color: white;
+}
+
+.conditionSubRangeRow {
+    display: none;
+}
+
+#readymade {
+    display: none;
+}
+
+#omakase {
+    display: none;
+}
+
+#manual, #changeDisplayButtonWrapper, #frequencyButtonWrapper, #omakaseTitle, #manualTitle {
+    display: none;
+}
+
+
+input[type="radio"]:checked#readymadeon~div#readymade {display:block;}
+input[type="radio"]:checked#omakaseon~div#omakase {display:block;}
+input[type="radio"]:checked#omakaseon~div#omakase h2#omakaseTitle {display:block;}
+input[type="radio"]:checked#manualon~div#omakase {display:block;}
+input[type="radio"]:checked#manualon~div#omakase h2#manualTitle {display:block;}
+input[type="radio"]:checked#manualon~div#omakase div#manual {display:block;}
+
+table#questionType th {
+    background-color: #336;
+    color: #fff;
+}
+
+table#questionType td {
+    background-color: #fff;
+}
+
+table#questionType tr:nth-child(odd) td {
+    background-color: #eee;
+}
+
+#modalContent th {
+    background-color: #336;
+    color: #fff;
+    white-space: nowrap;
+    min-width: 24px;
+}
+
+#modalContent td {
+    background-color: #fff;
+}
+
+#modalContent tr:nth-child(odd) td {
+    background-color: #eee;
+}
+
+#modalWindow, #tooltipBg {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 100%;
+}
+
+#modalBg {
+    background: rgba(0,0,0,0.8);
+    position: absolute;
+    height: 100vh;
+    width: 100%;
+}
+
+#modalContent {
+    position: absolute;
+    padding: 20px;
+    top: 50%;
+    left: 50%;
+    width: 80%;
+    height: 80vh;
+    background: #fff;
+    transform: translate(-50%,-50%);
+}
+
+#individualTable {
+    position: absolute;
+    top: 60px;
+    right: 0;
+    bottom: 60px;
+    left: 0;
+    overflow: auto;
+}
+
+#modalContent .header {
+    white-space: nowrap;
+}
+
+#modalContent .footer {
+    position: absolute;
+    bottom: 20px;
+    left: 0;
+    right: 0;
+    text-align: center;
+}
+
+#modalContent .footer .buttonArea {
+       margin-top: 10px;
+}
+
+#changeDisplayTooltipContent, #frequencyTooltipContent {
+       display: none;
+       position: absolute;
+       padding: 5px;
+       background-color: #fff;
+       border: 1px solid #333;
+       box-shadow: 3px 3px 10px 0 rgba(0, 0, 0, .2);
+       z-index: 1;
+}
+
+.box{
+       display: table-cell;
+       vertical-align: middle;
+       text-align: left;
+}
+
+.boxContainer{
+       width: 100%;
+       display: table;
+       table-layout: fixed;
+}
+
+.download-btn {
+    color: #fff;
+    background-color: #6c757d;
+    border: 1px solid #6c757d;
+    padding: 0.375rem 0.75rem;
+    font-size: 1rem;
+    BORDER-RADIUS: 0.25rem;
+    text-decoration: none;
+}
+
+/* safari */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+    _::-webkit-full-page-media, _:future, :root .safari_des {
+        color: red;
+        display: block;
+    }
+}

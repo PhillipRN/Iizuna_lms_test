@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    {include file='_gtag.html'}
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex">
+    <title>Books</title>
+
+    {include file='_favicon.html'}
+
+    <link rel="stylesheet" href="../common/styles/reset.css" type="text/css">
+    <link rel="stylesheet" href="./common/styles/layout.css?20240120" type="text/css">
+    <script src="../common/scripts/jquery-3.6.0.min.js"></script>
+    <script src="./common/scripts/registration.js"></script>
+</head>
+<body>
+<div id="container">
+    <div id="menuArea">
+        <div id="logoArea">
+            <img src="common/images/logo.png" alt="Test Creator LMS" />
+        </div>
+{include file='_side_menu.html' isJuku=$isJuku current='registration'}
+    </div>
+
+    <div id="contentArea">
+        <div id="addBook">
+            <h2>新規書籍登録</h2>
+            <p>お持ちの書籍コードを入力ください。</p>
+            <form action="registration_regist.php" method="post" id="registrationForm">
+                <input type="text" name="hash_key" class="borderBox" />
+                <div class="buttonArea">
+                    <input type="submit" value="登録" class="normalButton" />
+                </div>
+            </form>
+        </div>
+
+        <div id="applicationBook" style="margin-top: 80px">
+            <h2>追加書籍申請<span class="caution" style="font-size: 0.7em; font-weight: normal">　　※ご採用された書籍（30冊以上）のみご申請可</span></h2>
+            <div class="buttonArea">
+                <button class="normalButton" onclick="location.href='book_application.php'">申請</button>
+            </div>
+        </div>
+
+        <div id="bookList" style="margin-top: 100px;">
+            <h2>所持書籍一覧</h2>
+            <table>
+                {foreach $bookList as $book name='loop'}
+                <tr>
+                    <td>{$book.name}</td>
+                </tr>
+                {/foreach}
+            </table>
+        </div>
+    </div>
+</div>
+</body>
+</html>

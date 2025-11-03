@@ -1,0 +1,460 @@
+<!doctype html>
+<html>
+<head>
+    {include file='_gtag.html'}
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex">
+    <title>クイズ</title>
+
+    {include file='_favicon.html'}
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- link -->
+    <link rel="stylesheet" href="../common/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="common/style/test.css?250417">
+    <link rel="stylesheet" href="common/style/onigiri_quiz.css?05021332">
+    <link href="https://fonts.googleapis.com/css?family=Cormorant+Garamond:400,400i,500,500i,600,600i,700,700i" rel="stylesheet">
+
+    <!-- scripts -->
+    <script src="../common/scripts/jquery-3.6.0.min.js"></script>
+    <script src="common/script/chart.min.js"></script>
+    <script src="common/script/common.js?2023004011121"></script>
+    <script src="../common/bootstrap/js/bootstrap.min.js"></script>
+    <script src="common/script/bootbox.all.min.js"></script>
+    <script>
+        var currentIndex = 1;
+        var total = {$data.total};
+        var isAnswered = false;
+        var answers = {$answersJson};
+        var questionTypesJson = {$questionTypesJson};
+        var userAnswers = [];
+        var sound = null;
+        var isSending = false;
+
+        $(function() {
+            initializeQuestion();
+        });
+
+        /**
+         * 問題の表示初期化
+         */
+        function initializeQuestion()
+        {
+            $('#question_number').text(currentIndex + '/' + total);
+            isAnswered = false;
+            sound = null;
+
+            let questionType = questionTypesJson[currentIndex - 1];
+
+            $('#next_button').hide();
+
+            switch (questionType)
+            {
+                case 'four_choice_ja_en':
+                case 'four_choice_en_ja':
+                case 'four_choice_listening':
+                    $('#send_button').hide();
+                    break;
+
+                default:
+                    $('#send_button').show();
+                    break;
+            }
+        }
+
+        /**
+         * 次の問題へ表示切替
+         */
+        function next()
+        {
+            if (currentIndex >= total) {
+{if $isPreview}
+                closePreview();
+{else}
+                sendQuiz();
+{/if}
+                return;
+            }
+
+            ++currentIndex;
+
+            let hideIndex = currentIndex - 1;
+            let showIndex = currentIndex;
+
+            $('#question_' + hideIndex).hide();
+            $('#question_' + showIndex).show();
+
+            initializeQuestion();
+        }
+
+        /**
+         * ヒント表示
+         * @param button
+         */
+        function showHint(button)
+        {
+            let index = $(button).data('index');
+            $(button).hide();
+            $('#hint_' + index).show();
+        }
+
+        /**
+         * 終了するボタン
+         */
+        function backHome()
+        {
+            bootbox.confirm({
+                centerVertical: true,
+                closeButton: false,
+                message: '終了しますか？',
+                callback: function (result) {
+                    if (result) {
+                        window.location = 'index.php';
+                    }
+                }
+            });
+        }
+
+        /**
+         * プレビュー終了
+         */
+        function closePreview()
+        {
+            bootbox.confirm({
+                centerVertical: true,
+                closeButton: false,
+                message: '終了しますか？',
+                callback: function (result) {
+                    if (result) {
+                        window.close();
+                    }
+                }
+            });
+        }
+
+        /**
+         * ４択選択肢の回答
+         * @param button
+         */
+        function choiceAnswer(button)
+        {
+            if (isAnswered) return;
+            isAnswered = true;
+
+            let myAnswer = $(button).data('answer');
+
+            // 最終送信用に確保しておく
+            userAnswers.push(myAnswer);
+
+            let answer = answers[currentIndex - 1];
+            let isCorrect = (myAnswer == answer);
+
+            $('#choices_' + currentIndex + ' button').each(function(index) {
+                if (answer != $(this).data('answer')) {
+                    $(this).addClass('wrong_answer');
+                }
+
+                if (myAnswer == $(this).data('answer'))
+                {
+                    $(this).addClass(isCorrect ? 'user_correct' : 'user_wrong');
+                }
+            });
+
+            $('#next_button').show();
+        }
+
+        /**
+         * 入力の回答
+         */
+        function submitAnswer()
+        {
+            let myAnswer = $('#input_' + currentIndex).val();
+
+            // 最終送信用に確保しておく
+            userAnswers.push(myAnswer);
+
+            let answer = answers[currentIndex - 1];
+            let isCorrect = (myAnswer == answer);
+
+            if (isCorrect) $('#input_correct_' + currentIndex).show();
+            else           $('#input_wrong_' + currentIndex).show();
+
+            $('#answer_' + currentIndex).show();
+
+            $('#send_button').hide();
+            $('#next_button').show();
+        }
+
+        /**
+         * テストの結果を送信する
+         */
+        function sendQuiz() {
+            if (isSending) return;
+            isSending = true;
+
+            let formData = {
+                'answers': userAnswers,
+                'quiz_id': '{$data.id}',
+                'is_expired': {$is_expired},
+                '_csrf': '{$csrf}'
+            }
+
+            $.ajax({
+                url: 'onigiri_quiz_register.php',
+                type: 'post',
+                data: formData,
+                timeout: 30000,
+            })
+            .done(function(result) {
+                try {
+                    if (result.result == 'OK')
+                    {
+                        // 結果画面に遷移
+                        window.location.href = 'onigiri_quiz_result.php?id=' + result.result_id;
+                        return;
+                    }
+                    else if (result.error != null)
+                    {
+                        bootbox.alert({
+                            centerVertical: true,
+                            message: result.error.message + '(エラーコード : ' + result.error.code + ')'
+                        });
+                    }
+                    else
+                    {
+                        bootbox.alert({
+                            centerVertical: true,
+                            message: '予期せぬエラーが発生しました。'
+                        });
+                    }
+
+                } catch (e) {
+                    bootbox.alert({
+                        centerVertical: true,
+                        message: 'データ取得時にエラーが発生しました。(' + e + ')'
+                    });
+                }
+            })
+            .fail(function (jqXHR, textStatus, errorThrown) {
+                var errorMessage = '';
+
+                switch (textStatus)
+                {
+                    case 'timeout':
+                        errorMessage = '回答の送信がタイムアウトしました。';
+                        break;
+                    case 'error':
+                        errorMessage = '回答の送信中にエラーが発生しました。';
+                        break;
+                    case 'abort':
+                        errorMessage = '回答の送信中に通信が中断されました。';
+                        break;
+                    case 'parsererror':
+                        errorMessage = '回答送信後のデータの取得に失敗しました。';
+                        break;
+                    default:
+                        errorMessage = 'その他のエラーが発生しました。(' + jqXHR.status + ' : ' + textStatus + ')';
+                        break;
+                }
+
+                bootbox.alert({
+                    centerVertical: true,
+                    message: errorMessage
+                });
+            })
+            .always(function() {
+                isSending = false;
+            });
+        }
+
+        function playSound(soundId) {
+            if (sound == null) sound = new Audio('load_sound.php?id=' + soundId);
+            sound.play();
+        }
+    </script>
+{if $countDownSeconds > 0 && $isPreview == false}
+    <script type="text/javascript">
+        $(function () {
+            // 制限時間がきたら強制送信
+            setTimeout(sendQuiz, {$countDownSeconds} * 1000);
+        });
+    </script>
+{/if}
+</head>
+
+<body>
+    <header id="onigiri_quiz_header">
+        <article id="onigiri_quiz_back_button">
+{if $isPreview}
+            <button type="button" class="btn btn-secondary" style="border-radius: 0 50px 50px 0;height: 50px;" onclick="window.close()">閉じる</button>
+{else}
+            <button type="button" class="btn btn-secondary" style="border-radius: 0 50px 50px 0;height: 50px;" onclick="backHome()">終了する</button>
+{/if}
+        </article>
+
+        <article id="onigiri_quiz_question_number">
+            <span id="question_number">1/{$data.total}</span>
+        </article>
+    </header>
+
+    <main class="onigiri_quiz_main">
+        <section class="onigiri_quiz_information">
+{foreach $questions as $question name=loop}
+            <article id="question_{$smarty.foreach.loop.iteration}" {if $smarty.foreach.loop.iteration>1}style="display:none"{/if}>
+{if $question.type=='four_choice_ja_en'}
+{* 日本語→英語　4択 *}
+                <div class="onigiri_quiz_body">
+                    {$question.body}
+                </div>
+
+                <div class="onigiri_quiz_hint_area">
+                    <button type="button" class="btn btn-secondary" data-index="{$smarty.foreach.loop.iteration}" onclick="showHint(this)">ヒントを見る</button>
+                    <span id="hint_{$smarty.foreach.loop.iteration}" style="display: none">{$question.hint}</span>
+                </div>
+                
+
+                <div class="onigiri_quiz_choices_area" id="choices_{$smarty.foreach.loop.iteration}">
+                {foreach $question.choices as $choice name=choice_loop}
+                    <button type="button" class="btn btn-primary" data-answer="{$choice.text}" onclick="choiceAnswer(this)">
+                        <span>{$smarty.foreach.choice_loop.iteration}　{$choice.text}</span>
+                    </button><br />
+                {/foreach}
+                </div>
+
+{else if $question.type=='input_ja_en'}
+{* 日本語→英語　入力 *}
+                <div class="onigiri_quiz_body">
+                    {$question.body}
+                </div>
+
+                <div class="onigiri_quiz_hint_area">
+                    <button type="button" class="btn btn-secondary" data-index="{$smarty.foreach.loop.iteration}" onclick="showHint(this)">ヒントを見る</button>
+                    <span id="hint_{$smarty.foreach.loop.iteration}" style="display: none">{$question.hint}</span>
+                </div>
+                
+
+                <div class="onigiri_quiz_input_area">
+                    <input type="text" id="input_{$smarty.foreach.loop.iteration}" />
+                    <div class="user_correct" id="input_correct_{$smarty.foreach.loop.iteration}"></div>
+                    <div class="user_wrong" id="input_wrong_{$smarty.foreach.loop.iteration}"></div>
+                </div>
+
+                <div class="onigiri_quiz_input_answer" id="answer_{$smarty.foreach.loop.iteration}">
+                    {$question.answer}
+                </div>
+
+{else if $question.type=='four_choice_en_ja'}
+{* 英語→日本語　4択 *}
+                <div class="onigiri_quiz_body">
+                    {$question.body} <button type="button" class="sound_button" onclick="playSound('{$question.sound_file}')"><img src="common/images/icon_sound.png" style="width: 40px" /></button>
+                </div>
+
+                <div class="onigiri_quiz_hint_area">
+                    <button type="button" class="btn btn-secondary" data-index="{$smarty.foreach.loop.iteration}" onclick="showHint(this)">ヒントを見る</button>
+                    <span id="hint_{$smarty.foreach.loop.iteration}" style="display: none">{$question.hint}</span>
+                </div>
+
+                <div class="onigiri_quiz_choices_area" id="choices_{$smarty.foreach.loop.iteration}">
+                    {foreach $question.choices as $choice name=choice_loop}
+                    <button type="button" class="btn btn-primary" data-answer="{$choice.text}" onclick="choiceAnswer(this)">
+                        <span>{$smarty.foreach.choice_loop.iteration}　{$choice.text}</span>
+                    </button><br />
+                    {/foreach}
+                </div>
+
+{else if $question.type=='input_fill_in_en_example'}
+{* 英語例文穴埋め　入力 *}
+                <div class="onigiri_quiz_body_small">
+                    {$question.body}<br />
+                    {$question.subBody}
+                </div>
+
+                <div class="onigiri_quiz_hint_area">
+                    <button type="button" class="btn btn-secondary" data-index="{$smarty.foreach.loop.iteration}" onclick="showHint(this)">ヒントを見る</button>
+                    <span class="letter_spacing" id="hint_{$smarty.foreach.loop.iteration}" style="display: none">{$question.hint}</span>
+                </div>
+
+                <div class="onigiri_quiz_input_area">
+                    <input type="text" id="input_{$smarty.foreach.loop.iteration}" />
+                    <div class="user_correct" id="input_correct_{$smarty.foreach.loop.iteration}"></div>
+                    <div class="user_wrong" id="input_wrong_{$smarty.foreach.loop.iteration}"></div>
+                </div>
+
+                <div class="onigiri_quiz_input_answer" id="answer_{$smarty.foreach.loop.iteration}">
+                    {$question.answer}
+                </div>
+
+{else if $question.type=='input_listening_en_example'}
+{* 英語例文聞き取り　入力 *}
+                <div class="onigiri_quiz_body_small">
+                    <button type="button" class="sound_button" onclick="playSound('{$question.sound_file}')"><img src="common/images/icon_sound.png" style="width: 40px" /></button>
+                    <br />
+                    {$question.body}
+                </div>
+
+                <div class="onigiri_quiz_hint_area">
+                    <button type="button" class="btn btn-secondary" data-index="{$smarty.foreach.loop.iteration}" onclick="showHint(this)">ヒントを見る</button>
+                    <span class="letter_spacing" id="hint_{$smarty.foreach.loop.iteration}" style="display: none">{$question.hint}</span>
+                </div>
+
+                <div class="onigiri_quiz_input_area">
+                    <input type="text" id="input_{$smarty.foreach.loop.iteration}" />
+                    <div class="user_correct" id="input_correct_{$smarty.foreach.loop.iteration}"></div>
+                    <div class="user_wrong" id="input_wrong_{$smarty.foreach.loop.iteration}"></div>
+                </div>
+
+                <div class="onigiri_quiz_input_answer" id="answer_{$smarty.foreach.loop.iteration}">
+                    {$question.answer}
+                </div>
+
+{else if $question.type=='input_listening_en_word'}
+{* 英単語聞き取り　入力 *}
+                <div class="onigiri_quiz_body_small">
+                    <button type="button" class="sound_button" onclick="playSound('{$question.sound_file}')"><img src="common/images/icon_sound.png" style="width: 40px" /></button>
+                </div>
+
+                <div class="onigiri_quiz_hint_area">
+                    <button type="button" class="btn btn-secondary" data-index="{$smarty.foreach.loop.iteration}" onclick="showHint(this)">ヒントを見る</button>
+                    <span class="letter_spacing" id="hint_{$smarty.foreach.loop.iteration}" style="display: none">{$question.hint}</span>
+                </div>
+
+                <div class="onigiri_quiz_input_area">
+                    <input type="text" id="input_{$smarty.foreach.loop.iteration}" />
+                    <div class="user_correct" id="input_correct_{$smarty.foreach.loop.iteration}"></div>
+                    <div class="user_wrong" id="input_wrong_{$smarty.foreach.loop.iteration}"></div>
+                </div>
+
+                <div class="onigiri_quiz_input_answer" id="answer_{$smarty.foreach.loop.iteration}">
+                    {$question.answer}
+                </div>
+
+{else if $question.type=='four_choice_listening'}
+{* 英単語聞き取り　4択 *}
+                <div class="onigiri_quiz_body">
+                    <button type="button" class="sound_button" onclick="playSound('{$question.sound_file}')"><img src="common/images/icon_sound.png" style="width: 40px" /></button>
+                </div>
+
+                <div class="onigiri_quiz_hint_area">
+                    <button type="button" class="btn btn-secondary" data-index="{$smarty.foreach.loop.iteration}" onclick="showHint(this)">ヒントを見る</button>
+                    <span id="hint_{$smarty.foreach.loop.iteration}" style="display: none">{$question.hint}</span>
+                </div>
+
+                <div class="onigiri_quiz_choices_area" id="choices_{$smarty.foreach.loop.iteration}">
+                    {foreach $question.choices as $choice name=choice_loop}
+                    <button type="button" class="btn btn-primary" data-answer="{$choice.text}" onclick="choiceAnswer(this)">
+                        <span>{$smarty.foreach.choice_loop.iteration}　{$choice.text}</span>
+                    </button><br />
+                    {/foreach}
+                </div>
+
+{/if}
+            </article>
+{/foreach}
+            <article id="onigiri_quiz_footer_button_area">
+                <button type="button" class="btn btn-primary" style="border-radius: 30px;border: none; background-color: #EA6182;padding:5px 30px;" onclick="submitAnswer()" id="send_button">SEND</button>
+                <button type="button" class="btn btn-primary" style="border-radius: 30px;border: none; background-color: #EA6182;padding:5px 30px;" onclick="next()" id="next_button">NEXT</button>
+            </article>
+        </section>
+    </main>
+</body>
+</html>

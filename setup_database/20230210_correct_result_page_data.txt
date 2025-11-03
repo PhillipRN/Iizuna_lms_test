@@ -1,0 +1,26 @@
+set charset utf8mb4;
+
+BEGIN;
+
+# 生徒の各クイズに対する最高得点を保持
+CREATE TABLE json_quiz_result_high_score (
+    json_quiz_id BIGINT UNSIGNED NOT NULL,
+    student_id BIGINT UNSIGNED NOT NULL,
+    high_score INTEGER UNSIGNED NOT NULL,
+    create_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_date DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY(json_quiz_id, student_id)
+) ENGINE=InnoDB;
+
+CREATE INDEX index_json_quiz_result_high_score_json_quiz_id ON json_quiz_result_high_score(json_quiz_id);
+CREATE INDEX index_json_quiz_result_high_score_student_id ON json_quiz_result_high_score(student_id);
+
+
+INSERT INTO json_quiz_result_high_score (json_quiz_id, student_id, high_score) SELECT json_quiz_id, student_id, MAX(score) FROM json_quiz_result GROUP BY json_quiz_id, student_id;
+
+
+# ビューを破棄
+DROP VIEW json_quiz_result_high_score_view;
+
+
+COMMIT;

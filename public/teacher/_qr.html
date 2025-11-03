@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    {include file='_gtag.html'}
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex">
+    <title>QR</title>
+
+    {include file='_favicon.html'}
+
+    <link rel="stylesheet" href="../common/styles/reset.css" type="text/css">
+    <link rel="stylesheet" href="./common/styles/layout.css?20240120" type="text/css">
+</head>
+<body>
+<div id="containerQrPae">
+    {foreach $records as $record name='loop'}
+    <div class="qrArea">
+        <div class="codeTitle">{$record.name} LMS連携コード</div>
+        <div class="qrCode"><img src="qr_code.php?qr={$record.lms_code}" /></div>
+        <div class="code">{$record.lms_code}</div>
+    </div>
+    {/foreach}
+</div>
+</body>
+</html>

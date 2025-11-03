@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    {include file='_gtag.html'}
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex">
+    <title>LMSチケット</title>
+
+    {include file='_favicon.html'}
+
+    <link rel="stylesheet" href="../common/styles/reset.css" type="text/css">
+    <link rel="stylesheet" href="./common/styles/layout.css?20240120" type="text/css">
+    <script src="../common/scripts/jquery-3.6.0.min.js"></script>
+    <script src="../common/scripts/common.js"></script>
+    <script src="../common/scripts/validation.js"></script>
+
+    <script type="text/javascript">
+        $(function() {
+            $('#applicationRegistrationForm').submit(registrationSubmit);
+            $('#deleteButton').click(deleteRecord);
+            $('.deleteApplication').click(deleteApplicationRecord);
+        });
+
+        function registrationSubmit() {
+            let form = $('#applicationRegistrationForm');
+
+            var errors = [];
+
+            let quantity = $('#quantity').val();
+
+            if (!isPositiveInteger(quantity)) {
+                $('#errors').html('チケット数を正しく入力してください。');
+                return false;
+            }
+
+            $('#errors').html('');
+
+            $.ajax({
+                url: 'lms_ticket_register.php',
+                type: 'post',
+                data: form.serialize(),
+                timeout: 30000,
+            })
+            .done(function(result) {
+                if (result.error != null)
+                {
+                    $('#errors').html(result.error['message'] + ' (' + result.error['code'] + ')');
+                    return false;
+                }
+                else if (result.result == 'OK')
+                {
+                    alert('登録しました。');
+                    location.reload();
+                    return false;
+                }
+                else
+                {
+                    alert('エラーが発生しました。');
+                    return false;
+                }
+            })
+            .fail(function(result) {
+                alert('エラーが発生しました。');
+                return false;
+            });
+
+            return false;
+        }
+
+        function deleteApplicationRecord() {
+            if (confirm("本当にこの申請を取り消しますか？") == false)
+            {
+                return false;
+            }
+
+            let id = $(this).data('id');
+
+            $.ajax({
+                url: 'lms_ticket_application_delete.php',
+                type: 'post',
+                data: {
+                    '_csrf': '{$csrf}',
+                    'ltaid': id
+                },
+                timeout: 30000,
+            })
+                .done(function(result) {
+                    if (result.error != null)
+                    {
+                        $('#errors').html(result.error['message'] + ' (' + result.error['code'] + ')');
+                        return false;
+                    }
+                    else
+                    {
+                        alert('取り消しました。');
+                        location.reload();
+                        return false;
+                    }
+                })
+                .fail(function(result) {
+                    alert('エラーが発生しました。');
+                    return false;
+                });
+
+            return false;
+        }
+
+        function deleteRecord() {
+            if (confirm("本当にこのLMSチケットを削除しますか？\n※削除されたLMSチケットは元に戻すことはできません。") == false)
+            {
+                return false;
+            }
+
+            let id = $(this).data('id');
+
+            $.ajax({
+                url: 'lms_ticket_delete.php',
+                type: 'post',
+                data: {
+                    '_csrf': '{$csrf}',
+                    'ltid': id
+                },
+                timeout: 30000,
+            })
+            .done(function(result) {
+                if (result.error != null)
+                {
+                    $('#errors').html(result.error['message'] + ' (' + result.error['code'] + ')');
+                    return false;
+                }
+                else
+                {
+                    alert('削除しました。');
+                    window.location = './lms_ticket.php';
+                    return false;
+                }
+            })
+            .fail(function(result) {
+                alert('エラーが発生しました。');
+                return false;
+            });
+
+            return false;
+        }
+    </script>
+</head>
+<body>
+<div id="container">
+    <div id="menuArea">
+        <div id="logoArea">
+            <img src="common/images/logo.png" alt="Test Creator LMS" />
+        </div>
+{include file='_side_menu.html' isJuku=$isJuku current='lms_ticket'}
+    </div>
+
+    <div id="contentArea">
+        <h2>LMSチケット操作</h2>
+
+        <table class="separateTable">
+            <tr>
+                <th>種別</th>
+                <td>{$record.name}</td>
+            </tr>
+            <tr>
+                <th>期限</th>
+                <td>{$record.expire_year}年{$record.expire_month}月まで</td>
+            </tr>
+            <tr>
+                <th>チケット数</th>
+                <td>{$record.quantity}</td>
+            </tr>
+        </table>
+
+        <h2 style="margin-top: 25px">追加購入申請</h2>
+        <div id="errors" class="caution"></div>
+        <div style="margin-bottom: 20px">
+            <form id="applicationRegistrationForm">
+                <input type="hidden" name="_csrf" value="{$csrf}" />
+                <input type="hidden" name="ltid" value="{$record.id}" />
+                <input type="text" name="quantity" value="0" id="quantity" style="width: 100px" onchange="zen2han(this)" />
+                <button class="normalButton small">申請</button>
+            </form>
+        </div>
+
+        <div>
+            申請履歴
+            <table class="separateTable">
+                <tr>
+                    <th>日時</th>
+                    <th>購入数</th>
+                    <th>ステータス</th>
+                    <th style="width: 120px">操作</th>
+                </tr>
+                {foreach $applicationRecords as $applicationRecord name='loop'}
+                <tr>
+                    <td>{$applicationRecord.create_date|date_format:"%g-%m-%d %T"}</td>
+                    <td>{$applicationRecord.quantity}</td>
+                    <td>
+                        {if $applicationRecord.type == 2}
+                        管理者が付与
+                        {else}
+                            {if $applicationRecord.status == 1}
+                            申請中
+                            {else if $applicationRecord.status == 2}
+                            購入済
+                            {/if}
+                        {/if}
+                    </td>
+                    <td>
+                        {if $applicationRecord.status == 1}
+                            <button class="normalButton small delete deleteApplication" data-id="{$applicationRecord.id}">取り消し</button>
+                        {/if}
+                    </td>
+                </tr>
+                {/foreach}
+            </table>
+        </div>
+
+        <div style="margin-top: 20px">
+            <h2>削除</h2>
+            <div class="buttonArea">
+                {if $record.status == 0}
+                <button class="normalButton small delete" id="deleteButton" data-id="{$record.id}">削除</button>
+                {else}
+                <button class="normalButton small disabled">削除</button>
+                {/if}
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

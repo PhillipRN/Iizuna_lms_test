@@ -1,0 +1,19 @@
+set charset utf8mb4;
+
+BEGIN;
+
+# 学校所持書籍
+CREATE TABLE school_book (
+    school_id BIGINT UNSIGNED NOT NULL,
+    title_no INTEGER UNSIGNED NOT NULL,
+    is_buy TINYINT NOT NULL DEFAULT 0,
+    is_display TINYINT NOT NULL DEFAULT 0,
+    create_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_date DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+CREATE INDEX index_school_book_school_id ON school_book(school_id);
+
+CREATE VIEW school_book_view AS SELECT sb.*, b.name, lc.lms_code FROM school_book AS sb INNER JOIN school AS s ON sb.school_id = s.id INNER JOIN lms_code AS lc ON s.lms_code_id = lc.id INNER JOIN book AS b ON b.title_no = sb.title_no;
+
+COMMIT;

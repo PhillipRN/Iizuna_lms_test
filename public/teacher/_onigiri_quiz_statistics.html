@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    {include file='_gtag.html'}
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex">
+    <title>分析</title>
+
+    {include file='_favicon.html'}
+
+    <link rel="stylesheet" href="../common/styles/reset.css" type="text/css">
+    <link rel="stylesheet" href="./common/styles/layout.css?20240120" type="text/css">
+    <link rel="stylesheet" href="./common/styles/onigiri_quiz.css" type="text/css">
+    <link rel="stylesheet" href="./common/styles/statistics.css" type="text/css">
+    <script src="../common/scripts/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+<div id="container">
+    <div id="menuArea">
+        <div id="logoArea">
+            <img src="common/images/logo.png" alt="Test Creator LMS" />
+        </div>
+{include file='_side_menu.html' isJuku=$isJuku current='onigiri_quiz'}
+    </div>
+    <div id="contentArea">
+        <h1>分析</h1>
+
+        {if !empty($statisticsData)}
+        <div style="margin-bottom: 25px;">
+            <a href="download_onigiri_statistics_students.php?id={$id}" download="{$title} Quiz Student Analysis Report.csv" class="download-btn">受講生分析</a>
+            <a href="download_onigiri_statistics_items.php?id={$id}" download="{$title} Quiz Item Analysis Report.csv" class="download-btn">アイテム分析</a>
+        </div>
+        {/if}
+
+        <h2>{$title}</h2>
+        <div style="margin-bottom: 20px;">
+            <input type="radio" name="sort" onclick="location.href='onigiri_quiz_statistics.php?quiz_id={$id}'" id="sort_none" {if empty($sort)}checked{/if}> <label for="sort_none">ソートなし</label>　
+            <input type="radio" name="sort" onclick="location.href='onigiri_quiz_statistics.php?quiz_id={$id}&sort=correct'" id="sort_correct" {if $sort=="correct"}checked{/if}> <label for="sort_correct">正当率が高い問題順</label>　
+            <input type="radio" name="sort" onclick="location.href='onigiri_quiz_statistics.php?quiz_id={$id}&sort=incorrect'" id="sort_incorrect" {if $sort=="incorrect"}checked{/if}> <label for="sort_incorrect">誤答率が高い問題順</label>
+        </div>
+
+        {if !empty($statisticsData)}
+
+        {foreach $pageData as $question name='loop'}
+        <p><b>【 {$question.type_name} 】</b></p>
+
+        <p>（{$question.question_no}）{$question.body}</p>
+        {if !empty($question.subBody)}<p>{$question.subBody}</p>{/if}
+        <table class="statistics" >
+            {foreach $statisticsData.statisticsData[$question.question_index] as $statistics name='loop_statistics'}
+            <tr {if $statistics.isCorrect}class="table-success"{/if}>
+            <td {if $statistics.isCorrect}class="text-success"{/if}>{if $statistics.answer != ''}{$statistics.answer}{else}解答なし{/if}</td>
+            <td style="width: 15%" {if $statistics.isCorrect}class="text-success"{/if}>{if $statistics.answerCount != 0}{$statistics.answerCount}回答者{/if}</td>
+            <td style="width: 15%" {if $statistics.isCorrect}class="text-success"{/if}>{$statistics.rate}%</td>
+            <td style="width: 30%"><div class="{if $statistics.isCorrect}correct_bar{else}bar{/if}" style="width:{$statistics.rate*2+5}px;"></td>
+            </tr>
+            {/foreach}
+        </table>
+
+        {/foreach}
+
+        {else}
+        <div style="margin-top: 20px;">
+            まだ誰も回答していません。
+        </div>
+        {/if}
+    </div>
+</div>
+</body>
+</html>

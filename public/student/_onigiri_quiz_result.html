@@ -1,0 +1,83 @@
+<!doctype html>
+<html>
+<head>
+    {include file='_gtag.html'}
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex">
+    <title>クイズ</title>
+
+    {include file='_favicon.html'}
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- link -->
+    <link rel="stylesheet" href="../common/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="common/style/test.css?250417">
+    <link rel="stylesheet" href="common/style/onigiri_quiz.css?2304281650">
+    <link href="https://fonts.googleapis.com/css?family=Cormorant+Garamond:400,400i,500,500i,600,600i,700,700i" rel="stylesheet">
+
+    <!-- scripts -->
+    <script src="../common/scripts/jquery-3.6.0.min.js"></script>
+    <script src="common/script/chart.min.js"></script>
+    <script src="common/script/common.js?2023004011121"></script>
+    <script src="../common/bootstrap/js/bootstrap.min.js"></script>
+    <script src="common/script/bootbox.all.min.js"></script>
+    <script>
+
+    </script>
+</head>
+
+<body style="height:100%;border-radius: 0 0 0 0;">
+    <header>
+        <article id="header_title">
+            <h1>{$data.title}</h1>
+        </article>
+
+        <article>
+        </article>
+    </header>
+
+    <main>
+        <section class="onigiri_quiz_result">
+            <article class="onigiri_quiz_result_score">
+                <div>
+                    <span>{$data.score}</span>/{$data.total}
+                </div>
+            </article>
+            <article class="onigiri_quiz_result_table">
+                <div class="header" style="background-color:#EA6182; ">
+                    正解数　{$data.correctRate}%
+                </div>
+                <div class="body">
+                    <div class="wrapper">
+                        <table>
+                            {foreach $records as $record name=loop}
+                            <tr>
+                                <td style="width: 50px">{$smarty.foreach.loop.iteration}</td>
+                                <td>
+                                    {$record.word}
+                                    <p class="mean">{$record.mean}</p>
+                                </td>
+                                <td style="width: 50px">
+                                    {if $record.isCorrect}
+                                    <img src="common/images/icon_correct.png" alt="正解" style="width: 20px" />
+                                    {else}
+                                    <img src="common/images/icon_wrong.png" alt="不正解" style="width: 20px" />
+                                    {/if}
+                                </td>
+                            </tr>
+                            {/foreach}
+                        </table>
+                    </div>
+                </div>
+            </article>
+            <article class="button_area" style="margin-bottom: 50px;">
+{if $isTeacher}
+                <button type="button" class="btn btn-secondary" onclick="window.close()">閉じる</button>
+{else}
+                <button type="button" class="btn btn-secondary" onclick="location.href='index.php'">終了</button>
+{/if}
+            </article>
+        </section>
+    </main>
+</body>
+</html>

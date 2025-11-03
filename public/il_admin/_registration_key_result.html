@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <meta name="robots" content="noindex">
+    <title>管理画面</title>
+
+    {include file='_favicon.html'}
+
+    <link rel="stylesheet" href="../common/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="./common/style.css?202201292100" type="text/css">
+    <link rel="stylesheet" href="./common/admin.css?202201292100" type="text/css">
+    <script src="common/scripts/admin.js"></script>
+</head>
+<body>
+<p style="margin: 10px;"><a href="{if empty($teacherId)}registration_key_list.php{else}registration_key_teacher_list.php{/if}">戻る</a></p>
+<hr />
+<div id="contents">
+    <h1>書籍キー発行</h1>
+
+    <p>以下の書籍キーを発行しました。</p>
+    <table class="table table-bordered">
+        <thead>
+        <tr>
+            <th scope="col">書籍</th>
+            <th scope="col">キー</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <th scope="row">{$bookName}</th>
+            <td>{$hashKey}</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <button class="btn btn-primary" onclick="location.href='{if empty($teacherId)}registration_key_list.php{else}registration_key_teacher_list.php{/if}'">完了</button>
+</div>
+</body>
+</html>

@@ -1,0 +1,31 @@
+set charset utf8mb4;
+
+BEGIN;
+
+# is_juku を追加
+ALTER TABLE school ADD COLUMN is_juku TINYINT NOT NULL DEFAULT 0 AFTER is_paid;
+
+DROP VIEW school_view;
+CREATE VIEW school_view AS SELECT s.*, lc.lms_code FROM school AS s INNER JOIN lms_code AS lc ON s.lms_code_id = lc.id;
+
+DROP VIEW teacher_school_view;
+CREATE VIEW teacher_school_view AS SELECT t.*, s.name AS school_name, s.zip AS school_zip, s.pref AS school_pref, s.address AS school_address, s.phone AS school_phone, s.is_juku, lc.lms_code FROM teacher AS t INNER JOIN school AS s ON t.school_id = s.id INNER JOIN lms_code AS lc ON s.lms_code_id = lc.id;
+
+
+# 塾用生徒コード
+CREATE TABLE student_code (
+    id BIGINT UNSIGNED AUTO_INCREMENT,
+    school_id BIGINT UNSIGNED NOT NULL,
+    teacher_id BIGINT UNSIGNED NOT NULL,
+    name TEXT NOT NULL,
+    lms_code_id BIGINT UNSIGNED NOT NULL,
+    create_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_date DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB;
+
+CREATE INDEX index_student_code_lms_code_id ON student_code(lms_code_id);
+
+CREATE VIEW student_code_view AS SELECT sc.*, lc.lms_code FROM student_code AS sc INNER JOIN lms_code AS lc ON sc.lms_code_id = lc.id;
+
+COMMIT;
