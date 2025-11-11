@@ -771,3 +771,23 @@ CREATE VIEW lms_ticket_group_view AS
   INNER JOIN lms_ticket_group_use_count AS ltguc ON ltguc.lms_ticket_group_id = ltg.id
   INNER JOIN lms_code AS lc ON ltg.lms_code_id = lc.id;
 
+
+# 書籍アップロードジョブ履歴 -------------------------------------------------
+CREATE TABLE book_upload_jobs (
+    id BIGINT UNSIGNED AUTO_INCREMENT,
+    job_uuid VARCHAR(48) NOT NULL,
+    user_id BIGINT UNSIGNED DEFAULT NULL,
+    folder_name VARCHAR(64) NOT NULL,
+    file_count TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    status VARCHAR(32) NOT NULL,
+    is_dry_run TINYINT(1) NOT NULL DEFAULT 0,
+    memo TEXT,
+    log_path TEXT,
+    message TEXT,
+    warnings_payload LONGTEXT,
+    result_payload LONGTEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY(id),
+    UNIQUE KEY idx_book_upload_jobs_uuid(job_uuid)
+) ENGINE=InnoDB;
