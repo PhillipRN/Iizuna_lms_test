@@ -11,4 +11,5 @@ cd "${REPO_ROOT}"
 
 timestamp=$(date '+%Y-%m-%dT%H:%M:%S%z')
 echo "[${timestamp}] summary_and_correct_answer_rate start" >> "${LOG_FILE}"
-php app/Commands/summary_and_correct_answer_rate.php >> "${LOG_FILE}" 2>&1
+PHP_BIN=${PHP_BIN:-$(command -v php)}
+"${PHP_BIN}" app/Commands/summary_and_correct_answer_rate.php >> "${LOG_FILE}" 2>&1
