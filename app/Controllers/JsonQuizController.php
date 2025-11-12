@@ -266,7 +266,11 @@ class JsonQuizController
         $userAnswers = [];
         foreach ($param['answers'] as $answer)
         {
-            $userAnswers[$answer['question_id']] = $answer['user_answer']; 
+            $questionId = $answer['question_id'];
+            $userAnswers[$questionId] = [
+                'answer' => $answer['user_answer'] ?? '',
+                'answer_id' => $answer['answer_id'] ?? '',
+            ];
         }
 
         // スコア換算
@@ -364,17 +368,24 @@ class JsonQuizController
 
             $questionId = $question['question_id'];
 
-            $userAnswer = $userAnswers[ $questionId ] ?? '';
+            $userAnswer = $userAnswers[ $questionId ] ?? ['answer' => '', 'answer_id' => ''];
+            if (!is_array($userAnswer)) {
+                $userAnswer = [
+                    'answer' => $userAnswer,
+                    'answer_id' => '',
+                ];
+            }
 
             $isCorrect = $this->IsCorrectAnswer($question['answers'], $userAnswer);
 
             if (!$isCorrect && !empty($question['other_answers'])) {
-                $isCorrect = $this->IsCorrectOtherAnswer($question['other_answers'], $userAnswer);
+                $isCorrect = $this->IsCorrectOtherAnswer($question['other_answers'], $userAnswer['answer']);
             }
 
             $result['answers'][ $questionId ] = [
                 'isCorrect' => ($isCorrect) ? 1 : 0,
-                'answer' => $userAnswer
+                'answer' => $userAnswer['answer'],
+                'answer_id' => $userAnswer['answer_id']
             ];
 
             if ($isCorrect) ++$result['score'];
@@ -443,14 +454,32 @@ class JsonQuizController
      */
     private function IsCorrectAnswer($answers, $userAnswer)
     {
-        $userAnswer = $this->ReplaceUnneededTagsAndWhiteSpace($userAnswer);
-        $userAnswer = $this->ReplaceSingleQuote($userAnswer);
+        $userAnswerId = '';
+        $userAnswerText = '';
+
+        if (is_array($userAnswer)) {
+            $userAnswerId = $userAnswer['answer_id'] ?? '';
+            $userAnswerText = $userAnswer['answer'] ?? '';
+        } else {
+            $userAnswerText = $userAnswer;
+        }
+
+        if ($userAnswerId !== '') {
+            foreach ($answers as $answer) {
+                if (!empty($answer['answer_id']) && $answer['answer_id'] === $userAnswerId) {
+                    return $answer['weight'] == 100;
+                }
+            }
+        }
+
+        $userAnswerText = $this->ReplaceUnneededTagsAndWhiteSpace($userAnswerText);
+        $userAnswerText = $this->ReplaceSingleQuote($userAnswerText);
 
         foreach ($answers as $answer)
         {
             $answerText = $this->ReplaceUnneededTagsAndWhiteSpace($answer['answer_text']);
 
-            if ($answerText != $userAnswer) continue;
+            if ($answerText != $userAnswerText) continue;
 
             return $answer['weight'] == 100;
         }
@@ -466,6 +495,9 @@ class JsonQuizController
      */
     private function IsCorrectOtherAnswer($otherAnswers, $userAnswer)
     {
+        $userAnswer = $this->ReplaceUnneededTagsAndWhiteSpace($userAnswer);
+        $userAnswer = $this->ReplaceSingleQuote($userAnswer);
+
         foreach ($otherAnswers as $answer)
         {
             $answerText = $this->ReplaceUnneededTagsAndWhiteSpace($answer);

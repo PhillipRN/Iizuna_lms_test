@@ -650,9 +650,16 @@
 
         <p class="q_answer">
             {section name=question_ansewer start=0 loop=$questions[question].answers step=1}
+            {assign var=userAnswerId value=$questions[question].user_answer_id|default:''}
+            {assign var=selected value=0}
+            {if $userAnswerId != '' && $userAnswerId == $questions[question].answers[question_ansewer].answer_id}
+                {assign var=selected value=1}
+            {elseif $userAnswerId == '' && $questions[question].user_answer==$questions[question].answers[question_ansewer].value}
+                {assign var=selected value=1}
+            {/if}
             {if $questions[question].answers[question_ansewer].weight == 100}
                 <label class="radio-label radio-label_correct">
-            {elseif $questions[question].user_answer==$questions[question].answers[question_ansewer].value &&  $questions[question].answers[question_ansewer].weight == 0}
+            {elseif $selected &&  $questions[question].answers[question_ansewer].weight == 0}
                 <label class="radio-label radio-label_incorrect">
             {else}
                 <label class="radio-label radio-label_other">

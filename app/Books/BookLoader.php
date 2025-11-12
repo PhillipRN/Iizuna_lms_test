@@ -186,6 +186,9 @@ class BookLoader
      */
     private function FilterBookList($bookList, $availableTitleNos)
     {
+        // title_no は DB から数値型で返ることがあるため、比較用に文字列へ統一
+        $availableTitleNos = array_map('strval', $availableTitleNos);
+
         $result = array(
             Book::FLAG_ENGLISH_BOOK => [],
             Book::FLAG_JAPANESE_BOOK => []
@@ -195,7 +198,7 @@ class BookLoader
         {
             for ($i=0; $i<count($books); ++$i)
             {
-                if (in_array($books[$i]['title_no'], $availableTitleNos, true))
+                if (in_array((string)$books[$i]['title_no'], $availableTitleNos, true))
                 {
                     $result[$key][] = $books[$i];
                 }

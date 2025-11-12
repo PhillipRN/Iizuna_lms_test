@@ -36,6 +36,7 @@
             let question_id = $(".q_answer:eq("+i+") input").eq(0).attr("name")
             let input_type = $(".q_answer:eq("+i+") input").eq(0).attr("type")
             let user_answer = '';
+            let answer_id = '';
 
             if ($(".answer"+question_id).length == 0) {
                 bootbox.alert({
@@ -48,7 +49,13 @@
             if (input_type == "radio") {
                 let checkedObject = $(".answer"+question_id+":checked");
                 if (checkedObject.length != 0) {
-                    user_answer = checkedObject.val();
+                    answer_id = checkedObject.val();
+                    let labelText = checkedObject.next('.radio-text');
+                    if (labelText.length > 0) {
+                        user_answer = labelText.html();
+                    } else {
+                        user_answer = checkedObject.val();
+                    }
                 }
             } else {
                 user_answer = $(".answer"+question_id).val();
@@ -57,6 +64,9 @@
             let answer = {
                 "question_id":question_id,
                 "user_answer":user_answer
+            }
+            if (answer_id !== '') {
+                answer["answer_id"] = answer_id;
             }
             formData["answers"].push(answer);
         }
@@ -557,7 +567,11 @@
         </p>
         <p class="q_answer">
             {section name=question_ansewer start=0 loop=$questions[question].answers step=1}
-                <label class="radio-label"><input class="answer{$questions[question].question_id}" type="radio" name="{$questions[question].question_id}" value="{$questions[question].answers[question_ansewer].answer_text}"><span class="radio-text">{$questions[question].answers[question_ansewer].answer_text}</span></label>
+                {assign var=answerId value=$questions[question].answers[question_ansewer].answer_id|default:''}
+                <label class="radio-label">
+                    <input class="answer{$questions[question].question_id}" type="radio" name="{$questions[question].question_id}" value="{if $answerId != ''}{$answerId}{else}{$questions[question].answers[question_ansewer].answer_text}{/if}">
+                    <span class="radio-text">{$questions[question].answers[question_ansewer].answer_text}</span>
+                </label>
             {/section}
         </p>
         {elseif $questions[question].question_type == "vertical_short_answer_question" || $questions[question].question_type == "short_answer_question"}

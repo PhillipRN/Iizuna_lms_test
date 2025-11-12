@@ -252,10 +252,13 @@
             <article id="test_list_box" class="list radius_box">
                 <table class="test_list" id="test_list">
 {foreach $data.jsonQuizzes as $quiz name='loop'}
+{assign var=href value=""}
+{assign var=new value=""}
 {if !empty($quiz.onigiri_json_quiz_id)}{assign var=is_onigiri value=true}{else}{assign var=is_onigiri value=false}{/if}
 
 {if $is_onigiri}
     {assign var=href value="./onigiri_quiz_info.php?quiz_id={$quiz.onigiri_json_quiz_id}"}
+    {assign var=new value=""}
 {else}
     {if $quiz.is_expired || $quiz.is_result}
         {assign var=href value="./quiz_detail.php?quiz_id={$quiz.json_quiz_id}"}
