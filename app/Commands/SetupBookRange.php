@@ -16,18 +16,25 @@ class SetupBookRange
 
     function Setup()
     {
-        // トランザクション開始
-        PDOHelper::GetPDO()->beginTransaction();
-
         $this->_TCBookModel = new TCBookModel();
         $this->_BookRangeModel = new BookRangeModel();
 
         $this->_BookRangeModel->TruncateRecord();
+        $pdo = PDOHelper::GetPDO();
 
-        $this->SetupWithFlag(FLAG_ENGLISH_BOOK);
-        $this->SetupWithFlag(FLAG_JAPANESE_BOOK);
+        try {
+            $pdo->beginTransaction();
 
-        PDOHelper::GetPDO()->commit();
+            $this->SetupWithFlag(FLAG_ENGLISH_BOOK);
+            $this->SetupWithFlag(FLAG_JAPANESE_BOOK);
+
+            $pdo->commit();
+        } catch (\Throwable $throwable) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $throwable;
+        }
     }
 
     private function SetupWithFlag($flag)
@@ -117,7 +124,7 @@ class SetupBookRange
             if (!$result)
             {
                 echo "ERROR: {$book["TITLENO"]} でエラーが発生しました。(setup_book_range.php)";
-                exit;
+                exit(1);
             }
         }
     }

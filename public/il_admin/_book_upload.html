@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <meta name="robots" content="noindex">
+    <title>書籍アップロード | 管理画面</title>
+    {include file='_favicon.html'}
+    <link rel="stylesheet" href="./common/style.css?202104101900" type="text/css">
+    <link rel="stylesheet" href="./common/admin.css?202201292100" type="text/css">
+    <style>
+        .alert { padding: 12px; border-radius: 4px; margin-bottom: 16px; }
+        .alert-error { background: #ffe5e5; border: 1px solid #ff6b6b; }
+        .alert-warning { background: #fff7e0; border: 1px solid #f2c037; }
+        .alert-success { background: #e6ffed; border: 1px solid #2ecc71; }
+        .form-group { margin-bottom: 16px; }
+        label { display: block; font-weight: bold; margin-bottom: 4px; }
+        input[type="text"], textarea { width: 100%; padding: 8px; box-sizing: border-box; }
+        .readonly-input { background: #f5f5f5; border-color: #ccc; color: #555; }
+        .results-table, .history-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        .results-table th, .results-table td, .history-table th, .history-table td { border: 1px solid #ccc; padding: 8px; }
+        details { margin-top: 8px; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 12px; }
+        .badge-success { background: #2ecc71; color: #fff; }
+        .badge-failed { background: #ff6b6b; color: #fff; }
+        .badge-pending { background: #95a5a6; color: #fff; }
+        .form-actions { display: flex; gap: 12px; margin-top: 16px; }
+        .apply-hint { font-size: 12px; color: #555; margin-top: 4px; }
+        .history-actions { margin-top: 8px; display: flex; gap: 8px; justify-content: flex-end; }
+        .bbb:disabled { background: #d6d6d6 !important; border-color: #c5c5c5 !important; color: #888 !important; cursor: not-allowed; }
+        .bbb.btn-apply-ready { background: #ff8a00; border-color: #ff8a00; color: #fff; }
+        .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-backdrop.show { display: flex; }
+        .modal { background: #fff; padding: 24px; border-radius: 8px; width: 90%; max-width: 640px; max-height: 80vh; overflow-y: auto; }
+        .progress-steps { list-style: none; padding: 0; margin: 0 0 16px; }
+        .progress-steps li { padding: 6px 0; display: flex; align-items: center; justify-content: space-between; }
+        .progress-steps li span { font-weight: bold; }
+        .progress-steps li[data-status="pending"] span { color: #999; }
+        .progress-steps li[data-status="running"] span { color: #f39c12; }
+        .progress-steps li[data-status="done"] span { color: #2ecc71; }
+        .progress-steps li[data-status="failed"] span { color: #e74c3c; }
+        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 32px; height: 32px; animation: spin 1s linear infinite; margin-right: 8px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+<div id="header">
+    <img src="../common/images/iizunalogo.png" alt="iizunalogo" height="50">
+</div>
+<div id="contents">
+    <h2>書籍アップロードフォーム</h2>
+    <p>
+        編集部が <code>docs/開発ワークフローガイド.md</code> の手順に沿ってアップロードできるようにした画面です。<br>
+        本番運用の <code>ReadMe.md</code> には触れず、この画面と <code>docs/書籍アップロードフォーム設計.md</code> を参照してください。
+    </p>
+
+    {if isset($errors) && $errors}
+        <div class="alert alert-error">
+            <ul>
+                {foreach from=$errors item=error}
+                    <li>{$error|escape}</li>
+                {/foreach}
+            </ul>
+        </div>
+    {/if}
+
+    {if isset($messages) && $messages}
+        <div class="alert alert-success">
+            <ul>
+                {foreach from=$messages item=message}
+                    <li>{$message|escape}</li>
+                {/foreach}
+            </ul>
+        </div>
+    {/if}
+
+    {if isset($warnings) && $warnings}
+        <div class="alert alert-warning">
+            <ul>
+                {foreach from=$warnings item=warning}
+                    <li>{$warning|escape}</li>
+                {/foreach}
+            </ul>
+        </div>
+    {/if}
+
+    <form id="book-upload-form" method="post" enctype="multipart/form-data">
+        <input type="hidden" name="mode" value="start">
+        <div class="form-group">
+            <label for="excel_files">Excelファイル (.xls / .xlsx) <small>最大5件</small></label>
+            <input type="file" name="excel_files[]" id="excel_files" accept=".xls,.xlsx" multiple required>
+        </div>
+        <div class="form-group">
+            <label for="folder_name">インポート識別番号（編集不可）</label>
+            <input type="text" name="folder_name" id="folder_name" value="{$defaultFolder|escape}" readonly class="readonly-input">
+            <small>ページ表示時刻から自動採番され、同じ日でも毎回ユニークになります。</small>
+        </div>
+        <div class="form-group">
+            <label for="memo">備考（編集部メモ・担当者など）</label>
+            <textarea name="memo" id="memo" rows="3"></textarea>
+        </div>
+        <input type="hidden" name="dry_run" id="dry_run_input" value="1">
+        <div class="form-actions">
+            <button type="button" class="bbb" id="btn-data-check">データチェック</button>
+            <button type="button" class="bbb" id="btn-apply" disabled>DB反映（データチェック後）</button>
+        </div>
+        <p id="apply-hint" class="apply-hint">まずデータチェックを完了してからDB反映を行ってください。</p>
+    </form>
+
+    <div id="client-error-box" class="alert alert-error" style="display:none;"></div>
+    <div id="client-warning-box" class="alert alert-warning" style="display:none;"></div>
+
+    <hr>
+    <section id="latest-result-section">
+        <h3>直近の処理結果</h3>
+        <div id="latest-result-container">
+            {if $latestResult}
+                <p>ジョブID: <code>{$latestResult.job_uuid|escape}</code></p>
+                <p>処理フォルダ: <code>{$latestResult.folder_name|escape}</code></p>
+                <p>Import: <code>{$latestResult.import_path|escape}</code></p>
+                <p>Export: <code>{$latestResult.export_path|escape}</code></p>
+                <p>ログファイル: <code>{$latestResult.log_path|escape}</code></p>
+                {if $latestResult.is_dry_run}
+                    <p><span class="badge badge-pending">ドライラン</span> DBへの書き込みは実行していません。</p>
+                {/if}
+
+                <h4>処理対象書籍</h4>
+                <table class="results-table">
+                    <thead>
+                    <tr>
+                        <th>BookID</th>
+                        <th>アップロードファイル</th>
+                        <th>CSV配置先</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {foreach from=$latestResult.books item=book}
+                        <tr>
+                            <td>{$book.book_id|escape}</td>
+                            <td>{$book.file_name|escape}</td>
+                            <td>{$book.csv_path|default:'-'|escape}</td>
+                        </tr>
+                    {/foreach}
+                    </tbody>
+                </table>
+            {else}
+                <p>まだ完了したジョブはありません。</p>
+            {/if}
+        </div>
+    </section>
+
+    <hr>
+    <section>
+        <h3>最近のジョブ履歴</h3>
+        <table class="history-table">
+            <thead>
+            <tr>
+                <th>ジョブID</th>
+                <th>フォルダ</th>
+                <th>状態</th>
+                <th>ファイル数</th>
+                <th>備考</th>
+                <th>更新日時</th>
+            </tr>
+            </thead>
+            <tbody id="job-table-body">
+            {if $jobsPrimary}
+                {foreach from=$jobsPrimary item=job}
+                    <tr>
+                        <td>{$job.job_uuid|escape}</td>
+                        <td>{$job.folder_name|escape}</td>
+                        <td>
+                            {if $job.status == 'success'}
+                                <span class="badge badge-success">成功</span>
+                            {elseif $job.status == 'failed'}
+                                <span class="badge badge-failed">失敗</span>
+                            {elseif $job.status == 'dry-run'}
+                                <span class="badge badge-pending">DataCheck</span>
+                            {else}
+                                <span class="badge badge-pending">{$job.status|escape}</span>
+                            {/if}
+                            <br>{$job.message|escape}
+                        </td>
+                        <td>{$job.file_count|escape}</td>
+                        <td>{$job.memo|escape}</td>
+                        <td>{$job.updated_at|escape}</td>
+                    </tr>
+                {/foreach}
+            {else}
+                <tr><td colspan="6">履歴がまだありません。</td></tr>
+            {/if}
+            {foreach from=$jobsSecondary item=job}
+                <tr class="job-row-extra" style="display:none;">
+                    <td>{$job.job_uuid|escape}</td>
+                    <td>{$job.folder_name|escape}</td>
+                    <td>
+                        {if $job.status == 'success'}
+                            <span class="badge badge-success">成功</span>
+                        {elseif $job.status == 'failed'}
+                            <span class="badge badge-failed">失敗</span>
+                        {elseif $job.status == 'dry-run'}
+                            <span class="badge badge-pending">DataCheck</span>
+                        {else}
+                            <span class="badge badge-pending">{$job.status|escape}</span>
+                        {/if}
+                        <br>{$job.message|escape}
+                    </td>
+                    <td>{$job.file_count|escape}</td>
+                    <td>{$job.memo|escape}</td>
+                    <td>{$job.updated_at|escape}</td>
+                </tr>
+            {/foreach}
+            </tbody>
+        </table>
+        <div class="history-actions">
+            {if $jobsSecondary}
+                <button type="button" class="bbb" id="toggle-job-rows">さらに表示</button>
+            {/if}
+            {if $jobsModal}
+                <button type="button" class="bbb" id="open-history-modal">もっと見る</button>
+            {/if}
+        </div>
+    </section>
+
+    <p style="margin-top:24px;">
+        <a href="index.php">管理トップに戻る</a>
+    </p>
+</div>
+
+<div id="upload-modal-backdrop" class="modal-backdrop">
+    <div class="modal">
+        <h3>書籍アップロードの進行状況</h3>
+        <p id="modal-job-id" style="font-family: monospace;"></p>
+        <ul class="progress-steps" id="modal-steps">
+            <li data-step="queued" data-status="pending"><span>01. キュー登録</span><small>待機中</small></li>
+            <li data-step="converting" data-status="pending"><span>02. CSV変換</span><small>待機中</small></li>
+            <li data-step="importing" data-status="pending"><span>03. DB反映</span><small>待機中</small></li>
+            <li data-step="building_range" data-status="pending"><span>04. 範囲生成</span><small>待機中</small></li>
+        </ul>
+        <div style="display:flex; align-items:center; margin-bottom:12px;">
+            <div class="spinner" id="modal-spinner"></div>
+            <div id="modal-status-text">バックグラウンド処理を開始しています…</div>
+        </div>
+        <div id="modal-warning-box" class="alert alert-warning" style="display:none;"></div>
+        <div id="modal-error-box" class="alert alert-error" style="display:none;"></div>
+        <div style="text-align:right; margin-top:16px;">
+            <button type="button" class="bbb" id="modal-close-btn" disabled>閉じる</button>
+        </div>
+    </div>
+</div>
+
+<div id="history-modal-backdrop" class="modal-backdrop">
+    <div class="modal">
+        <h3>履歴一覧</h3>
+        <table class="history-table">
+            <thead>
+            <tr>
+                <th>ジョブID</th>
+                <th>フォルダ</th>
+                <th>状態</th>
+                <th>ファイル数</th>
+                <th>備考</th>
+                <th>更新日時</th>
+            </tr>
+            </thead>
+            <tbody id="history-modal-body"></tbody>
+        </table>
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-top:12px;">
+            <div>
+                <button type="button" class="bbb" id="history-prev">前へ</button>
+                <button type="button" class="bbb" id="history-next">次へ</button>
+            </div>
+            <div id="history-page-info"></div>
+        </div>
+        <div style="text-align:right; margin-top:12px;">
+            <button type="button" class="bbb" id="history-close-btn">閉じる</button>
+        </div>
+    </div>
+</div>
+
+{literal}
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+    const jobModalData = {/literal}{$jobsModalJson|default:'[]' nofilter}{literal};
+    const form = document.getElementById('book-upload-form');
+    const errorBox = document.getElementById('client-error-box');
+    const warningBox = document.getElementById('client-warning-box');
+    const modalBackdrop = document.getElementById('upload-modal-backdrop');
+    const modalSteps = document.getElementById('modal-steps');
+    const modalStatusText = document.getElementById('modal-status-text');
+    const modalJobId = document.getElementById('modal-job-id');
+    const modalWarningBox = document.getElementById('modal-warning-box');
+    const modalErrorBox = document.getElementById('modal-error-box');
+    const modalCloseBtn = document.getElementById('modal-close-btn');
+    const latestResultContainer = document.getElementById('latest-result-container');
+    const modalSpinner = document.getElementById('modal-spinner');
+    const extraRows = document.querySelectorAll('.job-row-extra');
+    const toggleJobRowsBtn = document.getElementById('toggle-job-rows');
+    const openHistoryBtn = document.getElementById('open-history-modal');
+    const historyModal = document.getElementById('history-modal-backdrop');
+    const historyCloseBtn = document.getElementById('history-close-btn');
+    const historyTableBody = document.getElementById('history-modal-body');
+    const historyPrev = document.getElementById('history-prev');
+    const historyNext = document.getElementById('history-next');
+    const historyPageInfo = document.getElementById('history-page-info');
+    const btnDataCheck = document.getElementById('btn-data-check');
+    const btnApply = document.getElementById('btn-apply');
+    const applyHint = document.getElementById('apply-hint');
+    const dryRunInput = document.getElementById('dry_run_input');
+
+    const FULL_STEP_ORDER = ['queued', 'converting', 'importing', 'building_range'];
+    let stepOrder = [...FULL_STEP_ORDER];
+    let activeStepMode = 'apply';
+    let lastRunningStep = stepOrder[0] || null;
+    const HISTORY_PAGE_SIZE = 30;
+    let pollTimer = null;
+    let historyPage = 1;
+    let canApply = false;
+    let currentAction = 'check';
+    const defaultApplyMessage = 'まずデータチェックを完了してからDB反映を行ってください。';
+    let needsHistoryReload = false;
+
+    function setApplyState(enabled, message) {
+        canApply = enabled;
+        if (btnApply) {
+            btnApply.disabled = !enabled;
+            btnApply.classList.toggle('btn-apply-ready', enabled);
+        }
+        if (applyHint) applyHint.textContent = message || defaultApplyMessage;
+    }
+
+    function setProcessing(state) {
+        if (btnDataCheck) btnDataCheck.disabled = state;
+        if (state) {
+            if (btnApply) btnApply.disabled = true;
+        } else if (canApply && btnApply) {
+            btnApply.disabled = false;
+        }
+    }
+
+    setApplyState(false, defaultApplyMessage);
+
+    function resetAlerts() {
+        [errorBox, warningBox, modalWarningBox, modalErrorBox].forEach(box => {
+            box.style.display = 'none';
+            box.innerHTML = '';
+        });
+    }
+
+    function setStepStatus(step, status, text) {
+        const node = modalSteps.querySelector(`li[data-step="${step}"]`);
+        if (!node) return;
+        node.dataset.status = status;
+        const small = node.querySelector('small');
+        if (small) { small.textContent = text || ''; }
+    }
+
+    function configureSteps(mode) {
+        const nextSteps = mode === 'check' ? FULL_STEP_ORDER.slice(0, 2) : [...FULL_STEP_ORDER];
+        activeStepMode = mode;
+        stepOrder = nextSteps;
+        lastRunningStep = nextSteps[0] || null;
+        modalSteps.querySelectorAll('li').forEach(li => {
+            const shouldShow = nextSteps.includes(li.dataset.step);
+            li.style.display = shouldShow ? '' : 'none';
+            if (!shouldShow) {
+                setStepStatus(li.dataset.step, 'pending', '待機中');
+            }
+        });
+    }
+
+    function inferFailedStep(job, result) {
+        if (result && result.failed_step) {
+            return result.failed_step;
+        }
+        const message = (job.message || '').toLowerCase();
+        if (message.includes('db') || message.includes('load_data')) {
+            return 'importing';
+        }
+        if (message.includes('範囲')) {
+            return 'building_range';
+        }
+        if (message.includes('csv') || message.includes('converter') || message.includes('データチェック')) {
+            return 'converting';
+        }
+        return null;
+    }
+
+    function renderFailureDetails(job, result) {
+        const rows = [];
+        if (job.message) {
+            rows.push(`<li>${escapeHtml(job.message)}</li>`);
+        }
+        if (result && result.log_path) {
+            rows.push(`<li>詳細ログ: <code>${escapeHtml(result.log_path)}</code></li>`);
+        }
+        if (!rows.length) {
+            rows.push('<li>詳細はログを確認してください。</li>');
+        }
+        return '<ul>' + rows.join('') + '</ul>';
+    }
+
+    function setJobId(jobId) {
+        modalJobId.textContent = jobId ? `JOB: ${jobId}` : 'JOB: 取得中…';
+    }
+
+    function openModal(jobId, actionMode) {
+        if (actionMode) {
+            configureSteps(actionMode);
+        }
+        setJobId(jobId);
+        modalStatusText.textContent = 'アップロードジョブを起動しています…';
+        modalCloseBtn.disabled = true;
+        modalSpinner.style.display = 'inline-block';
+        resetAlerts();
+        stepOrder.forEach(step => setStepStatus(step, 'pending', '待機中'));
+        modalBackdrop.classList.add('show');
+    }
+
+    function closeModal() {
+        modalBackdrop.classList.remove('show');
+        if (needsHistoryReload) {
+            location.reload();
+        }
+    }
+
+    modalCloseBtn.addEventListener('click', closeModal);
+
+    async function postForm(formData) {
+        const response = await fetch('book_upload.php', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+            throw payload;
+        }
+        return payload;
+    }
+
+    async function fetchStatus(jobUuid) {
+        const response = await fetch(`book_upload.php?mode=status&job_uuid=${encodeURIComponent(jobUuid)}`);
+        if (!response.ok) {
+            throw await response.json();
+        }
+        return response.json();
+    }
+
+    function escapeHtml(value) {
+        if (value === null || value === undefined) return '';
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function renderWarnings(target, warnings) {
+        if (!warnings || warnings.length === 0) {
+            target.style.display = 'none';
+            return;
+        }
+        target.innerHTML = '<ul>' + warnings.map(w => `<li>${escapeHtml(w)}</li>`).join('') + '</ul>';
+        target.style.display = 'block';
+    }
+
+    function renderResult(result) {
+        if (!result) return '';
+        const booksRows = (result.books || []).map(book => `
+            <tr>
+                <td>${escapeHtml(book.book_id || '')}</td>
+                <td>${escapeHtml(book.file_name || '')}</td>
+                <td>${escapeHtml(book.csv_path || '-')}</td>
+            </tr>`).join('');
+        const commandBlocks = (result.commands || []).map(cmd => `
+            <details>
+                <summary>${escapeHtml(cmd.label)} / ${escapeHtml(cmd.command)} （終了コード: ${escapeHtml(cmd.exitCode)}）</summary>
+                <p><strong>STDOUT</strong></p>
+                <pre>${escapeHtml(cmd.stdout || '')}</pre>
+                <p><strong>STDERR</strong></p>
+                <pre>${escapeHtml(cmd.stderr || '')}</pre>
+            </details>`).join('');
+
+        return `
+            <p>処理フォルダ: <code>${escapeHtml(result.folder_name)}</code></p>
+            <p>Import: <code>${escapeHtml(result.import_path)}</code></p>
+            <p>Export: <code>${escapeHtml(result.export_path)}</code></p>
+            <p>ログファイル: <code>${escapeHtml(result.log_path)}</code></p>
+            ${result.is_dry_run ? '<p><span class="badge badge-pending">ドライラン</span> DBへの書き込みは実行していません。</p>' : ''}
+            <h4>処理対象書籍</h4>
+            <table class="results-table">
+                <thead><tr><th>BookID</th><th>アップロードファイル</th><th>CSV配置先</th></tr></thead>
+                <tbody>${booksRows}</tbody>
+            </table>
+            <h4>実行ログ</h4>
+            ${commandBlocks}`;
+    }
+
+    function updateLatestResult(result) {
+        if (!latestResultContainer || !result) return;
+        latestResultContainer.innerHTML = renderResult(result);
+    }
+
+    async function poll(jobUuid) {
+        try {
+            const status = await fetchStatus(jobUuid);
+            const job = status.job;
+            const statusResult = status.result || null;
+            const serverMode = job.is_dry_run === 1 ? 'check' : 'apply';
+            if (serverMode !== activeStepMode) {
+                configureSteps(serverMode);
+            }
+            modalStatusText.textContent = job.message;
+
+            const failedStep = job.status === 'failed' ? inferFailedStep(job, statusResult) : null;
+            const runningIndex = stepOrder.indexOf(job.status);
+            if (runningIndex !== -1) {
+                lastRunningStep = job.status;
+            } else if (job.status === 'dry-run' || job.status === 'success') {
+                lastRunningStep = stepOrder[stepOrder.length - 1] || null;
+            }
+
+            let currentIndex = runningIndex;
+            if (job.status === 'dry-run' || job.status === 'success') {
+                currentIndex = stepOrder.length - 1;
+            } else if (job.status === 'failed') {
+                if (failedStep) {
+                    currentIndex = stepOrder.indexOf(failedStep);
+                }
+                if (currentIndex === -1) {
+                    currentIndex = lastRunningStep ? stepOrder.indexOf(lastRunningStep) : 0;
+                }
+            } else if (currentIndex === -1) {
+                currentIndex = 0;
+            }
+
+            stepOrder.forEach((step, index) => {
+                let state = 'pending';
+                let text = '待機中';
+
+                if (job.status === 'failed') {
+                    if (index < currentIndex) {
+                        state = 'done';
+                        text = '完了';
+                    } else if (index === currentIndex) {
+                        state = 'failed';
+                        text = '失敗';
+                    }
+                } else {
+                    if (index < currentIndex) {
+                        state = 'done';
+                        text = '完了';
+                    } else if (index === currentIndex) {
+                        if (job.status === 'dry-run' || job.status === 'success') {
+                            state = 'done';
+                            text = '完了';
+                        } else {
+                            state = 'running';
+                            text = '実行中';
+                        }
+                    }
+                }
+
+                setStepStatus(step, state, text);
+            });
+
+            renderWarnings(modalWarningBox, status.warnings);
+
+            if (job.status === 'failed') {
+                modalErrorBox.innerHTML = renderFailureDetails(job, statusResult);
+                modalErrorBox.style.display = 'block';
+                modalCloseBtn.disabled = false;
+                modalSpinner.style.display = 'none';
+                setProcessing(false);
+                setApplyState(false, defaultApplyMessage);
+                needsHistoryReload = true;
+                if (pollTimer) clearTimeout(pollTimer);
+                return;
+            }
+
+            if (statusResult && (job.status === 'dry-run' || job.status === 'success')) {
+                updateLatestResult(statusResult);
+                modalCloseBtn.disabled = false;
+                modalSpinner.style.display = 'none';
+                setProcessing(false);
+                if (job.status === 'dry-run') {
+                    setApplyState(true, `データチェック済: JOB ${job.job_uuid}`);
+                    needsHistoryReload = false;
+                } else {
+                    setApplyState(false, defaultApplyMessage);
+                    needsHistoryReload = true;
+                }
+                if (pollTimer) clearTimeout(pollTimer);
+                return;
+            }
+
+            pollTimer = setTimeout(() => poll(jobUuid), 4000);
+        } catch (error) {
+            modalErrorBox.textContent = '進捗取得中にエラーが発生しました。ページを再読み込みしてください。';
+            modalErrorBox.style.display = 'block';
+            modalCloseBtn.disabled = false;
+            setProcessing(false);
+        }
+    }
+
+    async function handleSubmit(action) {
+        if (!form) return;
+        if (action === 'apply' && !canApply) {
+            errorBox.innerHTML = '<ul><li>先にデータチェックを完了してください。</li></ul>';
+            errorBox.style.display = 'block';
+            return;
+        }
+        currentAction = action;
+        resetAlerts();
+        const formData = new FormData(form);
+        formData.set('mode', 'start');
+        formData.set('dry_run', action === 'check' ? '1' : '0');
+        setProcessing(true);
+        openModal(null, action);
+        try {
+            const response = await postForm(formData);
+            if (response.warnings && response.warnings.length) {
+                renderWarnings(warningBox, response.warnings);
+            }
+            setJobId(response.job_uuid);
+            poll(response.job_uuid);
+        } catch (error) {
+            const messages = (error && error.errors) ? error.errors : ['不明なエラーが発生しました。'];
+            errorBox.innerHTML = '<ul>' + messages.map(m => `<li>${m}</li>`).join('') + '</ul>';
+            errorBox.style.display = 'block';
+            modalStatusText.textContent = '入力内容に問題があります。修正して再度実行してください。';
+            modalSpinner.style.display = 'none';
+            modalCloseBtn.disabled = false;
+            setProcessing(false);
+        }
+    }
+
+    if (btnDataCheck) {
+        btnDataCheck.addEventListener('click', () => handleSubmit('check'));
+    }
+
+    if (btnApply) {
+        btnApply.addEventListener('click', () => handleSubmit('apply'));
+    }
+    if (toggleJobRowsBtn && extraRows.length) {
+        let expanded = false;
+        toggleJobRowsBtn.addEventListener('click', () => {
+            expanded = !expanded;
+            extraRows.forEach(row => { row.style.display = expanded ? '' : 'none'; });
+            toggleJobRowsBtn.textContent = expanded ? '折りたたむ' : 'さらに表示';
+        });
+    }
+
+    function badgeHtml(job) {
+        var label = job.status || '';
+        var cls = 'badge-pending';
+        if (job.status === 'success') { label = '成功'; cls = 'badge-success'; }
+        else if (job.status === 'failed') { label = '失敗'; cls = 'badge-failed'; }
+        else if (job.status === 'dry-run') { label = 'DataCheck'; cls = 'badge-pending'; }
+        return '<span class="badge ' + cls + '">' + escapeHtml(label) + '</span><br>' + escapeHtml(job.message || '');
+    }
+
+    function renderHistoryPage() {
+        if (!historyTableBody) return;
+        const total = jobModalData.length;
+        const totalPages = Math.max(1, Math.ceil(total / HISTORY_PAGE_SIZE));
+        historyPage = Math.min(Math.max(1, historyPage), totalPages);
+        const start = (historyPage - 1) * HISTORY_PAGE_SIZE;
+        const rows = jobModalData.slice(start, start + HISTORY_PAGE_SIZE);
+
+        if (rows.length === 0) {
+            historyTableBody.innerHTML = '<tr><td colspan="6">表示できる履歴がありません。</td></tr>';
+        } else {
+            historyTableBody.innerHTML = rows.map(function(job) {
+                return '<tr>' +
+                    '<td>' + escapeHtml(job.job_uuid || '') + '</td>' +
+                    '<td>' + escapeHtml(job.folder_name || '') + '</td>' +
+                    '<td>' + badgeHtml(job) + '</td>' +
+                    '<td>' + escapeHtml(job.file_count || '') + '</td>' +
+                    '<td>' + escapeHtml(job.memo || '') + '</td>' +
+                    '<td>' + escapeHtml(job.updated_at || '') + '</td>' +
+                    '</tr>';
+            }).join('');
+        }
+
+        if (historyPageInfo) {
+            historyPageInfo.textContent = historyPage + ' / ' + totalPages;
+        }
+        if (historyPrev) historyPrev.disabled = (historyPage <= 1);
+        if (historyNext) historyNext.disabled = (historyPage >= totalPages);
+    }
+
+    function showHistoryModal() {
+        if (!historyModal) return;
+        historyPage = 1;
+        renderHistoryPage();
+        historyModal.classList.add('show');
+    }
+
+    if (openHistoryBtn && jobModalData.length) {
+        openHistoryBtn.addEventListener('click', showHistoryModal);
+    }
+
+    if (historyCloseBtn) {
+        historyCloseBtn.addEventListener('click', () => historyModal.classList.remove('show'));
+    }
+
+    if (historyPrev) {
+        historyPrev.addEventListener('click', () => { historyPage = Math.max(1, historyPage - 1); renderHistoryPage(); });
+    }
+
+    if (historyNext) {
+        historyNext.addEventListener('click', () => { historyPage += 1; renderHistoryPage(); });
+    }
+});
+</script>
+{/literal}
+</body>
+</html>

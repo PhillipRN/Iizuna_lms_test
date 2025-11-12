@@ -41,7 +41,17 @@ class ConverterIizunaLMS
 
         $this->DebugLog("コンバート開始します。");
 
-        $directories = FileHelper::GetDirectories(__DIR__ . DIRECTORY_SEPARATOR . 'import');
+        $targetFolder = getenv('IMPORT_FOLDER');
+        if (!empty($targetFolder)) {
+            $specific = __DIR__ . DIRECTORY_SEPARATOR . 'import' . DIRECTORY_SEPARATOR . $targetFolder;
+            if (!is_dir($specific)) {
+                $this->DebugLog("IMPORT_FOLDER={$targetFolder} が見つかりません。処理を終了します。");
+                return;
+            }
+            $directories = [$specific];
+        } else {
+            $directories = FileHelper::GetDirectories(__DIR__ . DIRECTORY_SEPARATOR . 'import');
+        }
 
         foreach ($directories as $directory)
         {

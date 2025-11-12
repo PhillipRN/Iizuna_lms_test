@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -u
+
 if [ $# == 0 ]; then
     echo 'テーブルのプレフィックスを指定してください(例: TC10001)'
     exit 1
@@ -10,10 +12,16 @@ fi
 
 TABLE_PREFIX=$1
 
-MYSQL_HOST="localhost"
-MYSQL_DATABASE="iizunaLMS"
+MYSQL_HOST="${MYSQL_HOST:-localhost}"
+MYSQL_DATABASE="${MYSQL_DATABASE:-iizunaLMS}"
+MYSQL_CNF_FILE="${MYSQL_CNF_FILE:-mysql-dbaccess.cnf}"
 
-CMD_MYSQL="mysql --defaults-extra-file=mysql-dbaccess.cnf -h ${MYSQL_HOST} ${MYSQL_DATABASE}"
+if ! command -v mysql >/dev/null 2>&1; then
+    echo 'mysql コマンドが見つかりません。クライアントをインストールするか PATH を設定してください。'
+    exit 127
+fi
+
+CMD_MYSQL="mysql --defaults-extra-file=${MYSQL_CNF_FILE} -h ${MYSQL_HOST} ${MYSQL_DATABASE}"
 
 function ExecSQL()
 {
@@ -23,7 +31,7 @@ function ExecSQL()
     if [ $Ret -gt 0 ]; then
         echo "on error($Ret)"
         echo "FAILED"
-        exit
+        exit $Ret
     fi
 }
 
@@ -120,7 +128,7 @@ function LoadData()
     if [ $Ret -gt 0 ]; then
         echo "on error($Ret)"
         echo "FAILED"
-        exit
+        exit $Ret
     fi
 
     echo "${TABLE_PREFIX}_$1 loaded."

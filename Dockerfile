@@ -15,6 +15,7 @@ RUN apt-get update && apt-get install -y \
     libfreetype6-dev \
     libicu-dev \
     libonig-dev \
+    default-mysql-client \
     curl \
     vim \
     locales \
@@ -52,7 +53,6 @@ RUN { \
     echo 'error_reporting = E_ALL'; \
     echo 'date.timezone = Asia/Tokyo'; \
     echo 'mbstring.language = Japanese'; \
-    echo 'mbstring.internal_encoding = UTF-8'; \
     echo 'memory_limit = 256M'; \
     echo 'upload_max_filesize = 20M'; \
     echo 'post_max_size = 20M'; \
@@ -82,4 +82,3 @@ RUN mkdir -p app/smarty_template_c app/Temps app/Assets/Sounds \
 EXPOSE 80
 
 CMD ["apache2-foreground"]
-
