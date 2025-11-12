@@ -74,7 +74,9 @@ foreach ($data['questions'] as $key => $question)
 {
     if (!isset($question['question_id'])) continue;
 
-    $data['questions'][$key]['user_answer'] = $answers[ $question['question_id'] ]['answer'] ?? '';
+    $questionId = $question['question_id'];
+    $data['questions'][$key]['user_answer'] = $answers[ $questionId ]['answer'] ?? '';
+    $data['questions'][$key]['user_answer_id'] = $answers[ $questionId ]['answer_id'] ?? '';
 }
 
 $caQuestion = [];

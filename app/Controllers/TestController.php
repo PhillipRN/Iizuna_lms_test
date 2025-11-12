@@ -884,6 +884,7 @@ class TestController
         $body = $this->ReplaceTagsForQusetion($data["BUN"]);
         $questionId = $this->_syomonNum;
         ++$this->_syomonNum;
+        $answerIdCounter = 0;
 
         if ((isset($this->_params["showQuestionNo"])) && $this->_params["showQuestionNo"] == 1 && !empty($data["ANSWERFROM"]))
         {
@@ -895,7 +896,7 @@ class TestController
         }
 
         $daimonNo = $data["DAIMONNO"];
-        $answer = ["answer_text" => $this->ReplaceTagsForQusetion($data["ANSBUN"]), "weight" => 100];
+        $answer = $this->buildAnswerItem($questionId, $answerIdCounter, $this->ReplaceTagsForQusetion($data["ANSBUN"]), 100);
 
         $result = array(
             "daimon_no" => $daimonNo,
@@ -916,10 +917,12 @@ class TestController
 
             foreach ($items as $key => $item)
             {
-                $result["answers"][] = [
-                    "answer_text" => $this->ReplaceTagsForQusetion($item),
-                    "weight" => 0
-                ];
+                $result["answers"][] = $this->buildAnswerItem(
+                    $questionId,
+                    $answerIdCounter,
+                    $this->ReplaceTagsForQusetion($item),
+                    0
+                );
             }
 
             // 正答位置指定がある場合は途中に挿入する
@@ -963,6 +966,22 @@ class TestController
 
             return $result;
         }
+    }
+
+    /**
+     * @param int $questionId
+     * @param int $counter (by reference)
+     * @param string $text
+     * @param int $weight
+     * @return array
+     */
+    private function buildAnswerItem($questionId, &$counter, $text, $weight)
+    {
+        return [
+            "answer_id" => sprintf('q%s_a%s', $questionId, $counter++),
+            "answer_text" => $text,
+            "weight" => $weight
+        ];
     }
 
     /**
