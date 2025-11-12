@@ -18,24 +18,43 @@ class CorrectAnswerRate
     public function SummaryAndRegist()
     {
         $JsonQuizModel = new JsonQuizModel();
-        $records = $JsonQuizModel->GetsByKeyValue('calc_correct_answer_rate', 1);
+        $records = $JsonQuizModel->GetsByKeyValue('calc_correct_answer_rate', 1, ['id' => 'ASC']);
+
+        if (empty($records)) {
+            echo "[CorrectAnswerRate] 処理対象のクイズはありません。\n";
+            return;
+        }
+
+        $totals = [
+            'quizzes' => 0,
+            'summary_inserted' => 0,
+            'summary_updated' => 0,
+            'statistics_inserted' => 0,
+            'statistics_updated' => 0,
+        ];
 
         foreach ($records as $record) {
+            $quizId = (int)$record['id'];
+            $totals['quizzes']++;
+            echo sprintf('[CorrectAnswerRate] quiz_id=%d の集計を開始します。%s', $quizId, PHP_EOL);
+
             $resultData = $this->CompileQuestionResultData($record);
             $statisticsData = $this->CompileQuestionStatisticsData($record);
+            $participantCount = $this->ExtractParticipantCount($statisticsData);
 
-            // トランザクション開始
             PDOHelper::GetPDO()->beginTransaction();
 
-            if (!$this->AddOrUpdateJsonQuizResultSummary($resultData))
-            {
+            $summaryAction = $this->AddOrUpdateJsonQuizResultSummary($resultData);
+            if ($summaryAction === false) {
                 PDOHelper::GetPDO()->rollBack();
+                echo sprintf('[CorrectAnswerRate] quiz_id=%d: summary upsert に失敗しました。%s', $quizId, PHP_EOL);
                 continue;
             }
 
-            if (!$this->AddOrUpdateJsonQuizResultStatistics($statisticsData))
-            {
+            $statisticsAction = $this->AddOrUpdateJsonQuizResultStatistics($statisticsData);
+            if ($statisticsAction === false) {
                 PDOHelper::GetPDO()->rollBack();
+                echo sprintf('[CorrectAnswerRate] quiz_id=%d: statistics upsert に失敗しました。%s', $quizId, PHP_EOL);
                 continue;
             }
 
@@ -46,14 +65,34 @@ class CorrectAnswerRate
                 'update_date' => date("Y-m-d H:i:s")
             ]);
 
-            // トランザクションコミット
             if ($updateJsonQuizResult) {
                 PDOHelper::GetPDO()->commit();
+                $totals["summary_{$summaryAction}"]++;
+                $totals["statistics_{$statisticsAction}"]++;
+                echo sprintf(
+                    '[CorrectAnswerRate] quiz_id=%d: summary=%s, statistics=%s, participants=%d%s',
+                    $quizId,
+                    $summaryAction,
+                    $statisticsAction,
+                    $participantCount,
+                    PHP_EOL
+                );
             }
             else {
                 PDOHelper::GetPDO()->rollBack();
+                echo sprintf('[CorrectAnswerRate] quiz_id=%d: json_quiz 更新に失敗しました。%s', $quizId, PHP_EOL);
             }
         }
+
+        echo sprintf(
+            '[CorrectAnswerRate] 完了: quizzes=%d, summary(inserted=%d / updated=%d), statistics(inserted=%d / updated=%d)%s',
+            $totals['quizzes'],
+            $totals['summary_inserted'],
+            $totals['summary_updated'],
+            $totals['statistics_inserted'],
+            $totals['statistics_updated'],
+            PHP_EOL
+        );
     }
 
     /**
@@ -63,25 +102,25 @@ class CorrectAnswerRate
      */
     private function AddOrUpdateJsonQuizResultSummary($resultData)
     {
-        // json_quiz_result_summary のレコードチェック
         $JsonQuizResultSummaryModel = new JsonQuizResultSummaryModel();
         $jsonQuizResultSummaryRecords = $JsonQuizResultSummaryModel->GetByKeyValue('json_quiz_id', $resultData['json_quiz_id']);
 
-        // json_quiz_result_summary に既に json_quiz_id が登録されている場合はUPDATE、ない場合はINSERT
         if (empty($jsonQuizResultSummaryRecords)) {
             $jsonQuizResultSummary = new JsonQuizResultSummary($resultData);
-            return $JsonQuizResultSummaryModel->Add($jsonQuizResultSummary);
+            $JsonQuizResultSummaryModel->Add($jsonQuizResultSummary);
+            return 'inserted';
         }
-        else {
-            return $JsonQuizResultSummaryModel->Update([
-                'id' => $jsonQuizResultSummaryRecords['id'],
-                'average' => $resultData['average'],
-                'highest_score' => $resultData['highest_score'],
-                'lowest_score' => $resultData['lowest_score'],
-                'correct_answer_rates_json' => $resultData['correct_answer_rates_json'],
-                'update_date' => date("Y-m-d H:i:s")
-            ]);
-        }
+
+        $JsonQuizResultSummaryModel->Update([
+            'id' => $jsonQuizResultSummaryRecords['id'],
+            'average' => $resultData['average'],
+            'highest_score' => $resultData['highest_score'],
+            'lowest_score' => $resultData['lowest_score'],
+            'correct_answer_rates_json' => $resultData['correct_answer_rates_json'],
+            'update_date' => date("Y-m-d H:i:s")
+        ]);
+
+        return 'updated';
     }
 
     /**
@@ -91,22 +130,32 @@ class CorrectAnswerRate
      */
     private function AddOrUpdateJsonQuizResultStatistics($statisticsData)
     {
-        // json_quiz_result_summary のレコードチェック
         $JsonQuizResultStatisticsModel = new JsonQuizResultStatisticsModel();
         $jsonQuizResultStatisticsRecords = $JsonQuizResultStatisticsModel->GetByKeyValue('json_quiz_id', $statisticsData['json_quiz_id']);
 
-        // json_quiz_result_statistics に既に json_quiz_id が登録されている場合はUPDATE、ない場合はINSERT
         if (empty($jsonQuizResultStatisticsRecords)) {
             $jsonQuizResultStatistics = new JsonQuizResultStatistics($statisticsData);
-            return $JsonQuizResultStatisticsModel->Add($jsonQuizResultStatistics);
+            $JsonQuizResultStatisticsModel->Add($jsonQuizResultStatistics);
+            return 'inserted';
         }
-        else {
-            return $JsonQuizResultStatisticsModel->Update([
-                'id' => $jsonQuizResultStatisticsRecords['id'],
-                'answer_rates_json' => $statisticsData['answer_rates_json'],
-                'update_date' => date("Y-m-d H:i:s")
-            ]);
+
+        $JsonQuizResultStatisticsModel->Update([
+            'id' => $jsonQuizResultStatisticsRecords['id'],
+            'answer_rates_json' => $statisticsData['answer_rates_json'],
+            'update_date' => date("Y-m-d H:i:s")
+        ]);
+
+        return 'updated';
+    }
+
+    private function ExtractParticipantCount(array $statisticsData): int
+    {
+        $payload = json_decode($statisticsData['answer_rates_json'] ?? '[]', true);
+        if (!is_array($payload)) {
+            return 0;
         }
+
+        return (int)($payload['total'] ?? 0);
     }
 
     /**

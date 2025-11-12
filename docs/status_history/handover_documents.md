@@ -1,19 +1,27 @@
 # Handover Documents
 
-このリポジトリの最新状況を把握するには、以下のドキュメントを順番に参照してください。
+このリポジトリは、学校向けいいずなLMS本体（本番のEC2/RDSクローン + Docker ローカル検証環境）です。`app/` 以下がメインの PHP アプリケーション（Controllers/Models/Commands 等）、`public/` 以下が管理画面・生徒画面など Web UI のエントリポイントなので、仕様確認やデバッグ時はこの2ディレクトリを中心に確認すると全体像を掴みやすくなります。
 
-1. `docs/status_history/current_development_status_2511071335.md`
-   - 現在の開発状況、残タスク、環境メモ、次のアクションが整理されています。
-2. `docs/status_history/session_activity_log_2511071335.md`
-   - セッションでの作業履歴や発生した課題、引き継ぎ事項の詳細が記録されています。
-3. `docs/status_history/current_development_status.md`（テンプレート）
-4. `docs/status_history/session_activity_log.md`（テンプレート）
-5. `AGENTS.md`
+最新状況を把握するには、以下のドキュメントを順番に参照してください。
+
+1. `docs/status_history/current_development_status_2511121930.md`
+   - 最新の開発状況、残タスク、次のアクションが整理されています。
+2. `docs/status_history/session_activity_log_2511121930.md`
+   - 今セッションのコマンド履歴や注意点、次回への引き継ぎ事項が記録されています。
+3. `docs/status_history/fix_log_20251112.md`
+   - これまでの修正内容と、未着手のTODOが一覧化されています。
+4. `docs/status_history/next_steps_20251112.md`
+   - 次セッションで着手すべきタスクの優先度やメモをまとめています。
+5. `docs/status_history/current_development_status.md`（テンプレ）
+6. `docs/status_history/session_activity_log.md`（テンプレ）
+7. `AGENTS.md`
    - リポジトリ全体のガイドラインと注意事項がまとめられています。
-6. `docs/開発ワークフローガイド.md`
+8. `docs/開発ワークフローガイド.md`
    - 環境構築や AWS 複製環境との連携など、開発フロー全体の詳細。
-7. `docs/書籍アップロードフォーム設計.md`
-   - 今回の機能拡張対象である書籍アップロードフォームの基本設計。
+9. `docs/書籍アップロードフォーム設計.md`
+   - 書籍アップロードフォームの基本設計。
+10. `docs/dynamodb_local_setup.md` / `docs/summary_and_correct_answer_rate.md`
+    - student ログイン用 DynamoDB 初期化手順と、統計集計コマンドの実行ガイドです。
 
 上記を順に読み進めることで、プロジェクトの状況と開発手順を迅速に把握できます。
 また、反応・応答・報告などこのセッションのチャットは全て日本語でお願いします。
