@@ -17,6 +17,11 @@
    - 既存 LMS JSON 出力との共存方法を整理し、必要なデータ変換ロジックを洗い出す。
    - 先生がテスト生成 → Google Forms にインポートするまでの操作フローを設計し、バックログにタスク化。
 
-5. **監視・運用**
+5. **Onigiri テスト生成フローの確認**
+   - ローカル・オンライン双方で `public/teacher/onigiri_quiz_*` 系のエンドポイントを通し、JSON / delivery テーブルの差異を調査。
+   - `app/Onigiri/` 配下のロジックと BookUpload の連携を確認し、マスターデータ（TC××××系）が十分に揃っているか検証。
+   - 必要に応じて Onigiri 用の BookLoader/テーブルセットを RDS に投入し、開発手順を Runbook に追加する。
+
+6. **監視・運用**
    - `summary_and_correct_answer_rate` cron の成功/失敗を通知する仕組み（Slack 等）を検討。
    - DNS / 証明書の更新スケジュールを整備し、クローン環境でも https アクセスが可能になるよう準備。
