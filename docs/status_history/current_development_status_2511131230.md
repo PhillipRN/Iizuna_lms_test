@@ -15,28 +15,28 @@
 | 統計コマンド | 完了 | `CorrectAnswerRate` の自動 INSERT / ログ強化と cron 運用を整備。 |
 
 ## 3. Achievements (this session)
-- `CorrectAnswerRate` のログ出力と自動 INSERT を実装し、Docker/AWS で `[CorrectAnswerRate]` ログを確認。
+- `CorrectAnswerRate` の自動 INSERT / ログ強化を実装し、Docker/AWS 双方で `[CorrectAnswerRate]` ログを確認。
 - `run_summary_and_correct_answer_rate.sh` を追加し、cron 手順とログ監視方法を文書化。
-- AWS クローンで PHP/Nginx のアップロード上限・タイムアウト・権限を調整し、書籍アップロードが実行できるところまで復旧。
+- AWS クローンで PHP/Nginx の上限値・権限を調整し、書籍アップロードが最後まで動作するところまで復旧。
 - DNS に `spapp-dev-clone.iizuna-lms.com` を追加し、外部端末からのアクセスを確認。
-- オンライン反映手順書と SFTP 用反映手順書を作成（`docs/online_deployment_runbook_20251112.md`, `docs/sftp_deployment_runbook_answer_id_fix.md`）。
+- オンライン反映手順書 (`docs/online_deployment_runbook_20251112.md`) と SFTP 手順書 (`docs/sftp_deployment_runbook_answer_id_fix.md`) を作成。
 
 ## 4. Remaining Tasks
 - [High] AWS クローンで master upload（データチェック→import→setup_book_range）を完走させ、手順を確定。
-- [High] 本番 RDS で `scripts/add_answer_choice_ids.php --apply` を実行し、app/public/converter の差分を SFTP で反映（不具合修正版の本番適用）。
-- [Medium] 書籍アップロードのタイムアウト/メモリ調整を詰め、エラーハンドリング改善。
-- [Medium] 次フェーズ：Google Forms 用テスト出力機能の要件定義（既存 LMS JSON との共存方法を整理）。
-- [Low] cron の失敗検知（summary_and_correct_answer_rate のアラート化）とログ整理。
+- [High] 本番 RDS で `scripts/add_answer_choice_ids.php --apply` を実行し、app/public/converter の差分を SFTP で反映。
+- [Medium] 書籍アップロードのタイムアウト/メモリ設定を詰め、エラーハンドリングを改善。
+- [Medium] 次フェーズ：Google Forms 出力機能の仕様整理（既存 LMS 出力との共存方法を定義）。
+- [Low] cron の失敗検知（summary_and_correct_answer_rate）とログ監視の自動化。
 
 ## 5. Known Issues & Notes
-- converter 実行時に `Maximum execution time` / `Allowed memory size` が発生する場合があるため、PHP/Nginx の上限を十分に確保すること。
-- BookUpload の失敗ジョブが残ると `result_payload` が空のままになり、UI で Notice が出る。失敗ジョブは削除するか `result_payload={}` を設定しておく。
-- DNS 追加後、旧 hosts 設定が端末に残っていると `ERR_NAME_NOT_RESOLVED` になるので注意。
+- converter 実行時に `Maximum execution time` や `Allowed memory size` が発生する場合があるため、PHP/Nginx の上限を十分に確保すること。
+- BookUpload 失敗ジョブが UI に Notice を出すので、`book_upload_jobs` のクリーンアップが必要。
+- DNS を追加した後、端末側の hosts 設定が残っていると `ERR_NAME_NOT_RESOLVED` になるので注意。
 
 ## 6. Next Focus
-1. AWS クローン上で master upload を最後まで成功させ、反映手順を Runbook に反映。
-2. 本番に answer_id 修正版を SFTP で適用し、RDS バックフィルを実施。
-3. Google Forms 出力機能の仕様を整理し、既存テスト生成フローとの整合を取る。
+1. AWS クローン上で master upload を最後まで成功させ、ログを Runbook に反映。
+2. 本番に answer_id 修正版を SFTP で適用し、`scripts/add_answer_choice_ids.php --apply` を実施。
+3. Google Forms 出力機能の要件を整理し、設計フェーズへ移行。
 
 ## 7. References
 - `docs/online_deployment_runbook_20251112.md`
